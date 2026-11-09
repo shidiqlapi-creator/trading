@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Meja Trader - Dashboard Jurnal & Backtest</title>
+  
+  <!-- PWA & Web App Meta -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#8a5d0c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2991/2991231.png">
+  
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+
+  <style>
+  :root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  html{scroll-padding-top:env(safe-area-inset-top,0px)}
+  body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}
+  img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
+
+  :root{
+    --bg:#eceff2; --surface:#f8f9fa; --surface-2:#eef1f4; --ink:#14181d; --ink-2:#4a535d; --muted:#6b7580;
+    --line:#d5dae0; --line-2:#e3e7eb; --accent:#8a5d0c; --accent-soft:#f1e6d0; --on-accent:#ffffff;
+    --pos:#006300; --neg:#c23232; --warn-bg:#fbefd2; --warn-ink:#6b4a05;
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --grid:#e1e0d9; --axis:#c3c2b7;
+    --font:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+    --bg:#0f1317; --surface:#171c21; --surface-2:#1e252b; --ink:#e8ebee; --ink-2:#b7bec6; --muted:#98a1ab;
+    --line:#2a3139; --line-2:#222a31; --accent:#d9a441; --accent-soft:#2c2412; --on-accent:#1a1304;
+    --pos:#3fbf4a; --neg:#ef6b6b; --warn-bg:#2e2512; --warn-ink:#e8c777;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --grid:#2c2c2a; --axis:#383835; color-scheme:dark}}
+  :root[data-theme="dark"]{
+    --bg:#0f1317; --surface:#171c21; --surface-2:#1e252b; --ink:#e8ebee; --ink-2:#b7bec6; --muted:#98a1ab;
+    --line:#2a3139; --line-2:#222a31; --accent:#d9a441; --accent-soft:#2c2412; --on-accent:#1a1304;
+    --pos:#3fbf4a; --neg:#ef6b6b; --warn-bg:#2e2512; --warn-ink:#e8c777;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --grid:#2c2c2a; --axis:#383835; color-scheme:dark}
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.5;
+    padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+  .wrap{max-width:1180px;margin:0 auto}
+  header.top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;padding-block:16px 8px}
+  .brand{font-weight:700;font-size:20px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:8px}
+  .brand small{font:500 11px var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+  .chip{font:500 11px var(--mono);padding:3px 8px;border:1px solid var(--line);border-radius:999px;color:var(--ink-2);background:var(--surface);margin-left:auto}
+  nav.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:20px;scrollbar-width:thin}
+  nav.tabs a{padding:10px 14px;color:var(--ink-2);text-decoration:none;font-weight:500;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px}
+  nav.tabs a:hover{color:var(--ink)}
+  nav.tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+  a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  h2{font-size:16px;margin:0 0 12px;font-weight:650;letter-spacing:-.005em}
+  h3{font-size:12px;margin:0 0 10px;font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;min-width:0}
+  .grid{display:grid;gap:16px;margin-bottom:16px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+  .kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(138px,1fr));margin-bottom:16px}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;min-width:0}
+  .kpi .l{font:500 11px var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .kpi .v{font:600 22px var(--mono);margin-top:4px;letter-spacing:-.02em;overflow-wrap:anywhere}
+  .kpi .s{font-size:12px;color:var(--muted);margin-top:2px}
+  .kpi.hero{grid-column:span 2}
+  .kpi.hero .v{font-size:30px}
+  .pos{color:var(--pos)} .neg{color:var(--neg)} .mut{color:var(--muted)}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .banner{background:var(--warn-bg);color:var(--warn-ink);border:1px solid var(--line);border-radius:6px;padding:10px 14px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+  .banner.info{background:var(--accent-soft);color:var(--ink)}
+  .banner button{margin-left:auto}
+  button,.btn{font:600 13px var(--font);border-radius:5px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 12px;cursor:pointer}
+  button:hover{background:var(--surface-2)}
+  button.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+  button.primary:hover{filter:brightness(1.08);background:var(--accent)}
+  button.ghost{border-color:transparent;background:transparent;color:var(--ink-2);padding:4px 8px}
+  button.danger{color:var(--neg)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chips button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  form .fg{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}
+  label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--ink-2);font-weight:500;min-width:0}
+  label.f .h{font-size:11px;color:var(--muted);font-weight:400}
+  input,select,textarea{font:400 14px var(--font);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:7px 9px;width:100%;min-width:0}
+  input[type=number],input.mono{font-family:var(--mono)}
+  textarea{min-height:64px;resize:vertical}
+  .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .sp{flex:1}
+  .tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface-2)}
+  td{padding:8px 10px;border-bottom:1px solid var(--line-2);white-space:nowrap;vertical-align:middle}
+  tr:last-child td{border-bottom:0}
+  td.wrapc{white-space:normal;min-width:160px}
+  td.r,th.r{text-align:right}
+  .pill{display:inline-block;font:600 11px var(--mono);padding:2px 7px;border-radius:999px;border:1px solid var(--line)}
+  .pill.hit{color:var(--pos);border-color:var(--pos)} .pill.miss{color:var(--neg);border-color:var(--neg)} .pill.wait{color:var(--muted)}
+  .pill.buy{color:var(--s1);border-color:var(--s1)} .pill.sell{color:var(--s2);border-color:var(--s2)}
+  .preview{background:var(--surface-2);border:1px dashed var(--line);border-radius:6px;padding:10px 12px;margin-top:12px;display:flex;flex-wrap:wrap;gap:6px 22px;font-size:13px}
+  .preview b{font-family:var(--mono);font-weight:600}
+  .errs{color:var(--neg);font-size:13px;margin-top:8px}
+  .warns{color:var(--warn-ink);background:var(--warn-bg);border-radius:5px;padding:6px 10px;font-size:13px;margin-top:8px}
+  .empty{padding:28px 16px;text-align:center;color:var(--muted)}
+  .chartbox{position:relative}
+  svg.ch{width:100%;height:auto;display:block;overflow:visible}
+  svg text{font-family:var(--mono);font-size:11px;fill:var(--muted)}
+  .tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font:500 12px var(--mono);padding:6px 9px;border-radius:5px;transform:translate(-50%,-110%);white-space:nowrap;z-index:5}
+  .bar{height:8px;background:var(--line-2);border-radius:2px;min-width:80px;position:relative}
+  .bar i{position:absolute;inset:0 auto 0 0;background:var(--s1);border-radius:2px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);margin-top:8px}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+  .note{font-size:12px;color:var(--muted)}
+  .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:6px;font-weight:500;z-index:20;max-width:90vw}
+  details summary{cursor:pointer;font-weight:600}
+  .list-card{display:grid;gap:8px}
+  .two{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+  @media (max-width:560px){.kpi.hero{grid-column:span 1}.kpi .v{font-size:19px}.kpi.hero .v{font-size:24px}}
+  @media (prefers-reduced-motion:no-preference){button{transition:background .12s}}
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">Meja Trader <small>XAUUSD · Forex</small></div>
+    <span class="chip" id="storeChip">memuat…</span>
+  </header>
+  <nav class="tabs" id="tabs" aria-label="Modul"></nav>
+  <div id="banner"></div>
+  <main id="app"></main>
+</div>
+<div id="toast" class="toast" hidden></div>
+
+<!-- FIREBASE SDK ENGINE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-analytics.js";
+  import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC110pZjx1ap2SER61vKRDigtjeKoI2O4E",
+    authDomain: "trading-f3e31.firebaseapp.com",
+    projectId: "trading-f3e31",
+    storageBucket: "trading-f3e31.firebasestorage.app",
+    messagingSenderId: "624639259769",
+    appId: "1:624639259769:web:623978bf4440bb83af50a8",
+    measurementId: "G-NP6ZPGD32X"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const db = getFirestore(app);
+
+  // Enable offline persistence for Firestore
+  enableIndexedDbPersistence(db).catch((err) => {
+    console.warn("Offline persistence warning:", err.code);
+  });
+
+  window.fbDb = db;
+  window.fbCol = collection(db, "users", "default_trader", "journals");
+  window.fbDocFunc = doc;
+  window.fbSetDoc = setDoc;
+  window.fbDeleteDoc = deleteDoc;
+  window.fbOnSnapshot = onSnapshot;
+
+  // Signal that Firebase is initialized
+  window.dispatchEvent(new Event('firebase-ready'));
+</script>
+
+<script>
+/* CORE LOGIC */
+const INSTR={};
+(function(){
+  const add=(s,pip,contract,base,quote,dec)=>{INSTR[s]={pip,contract,base,quote,dec}};
+  add('XAUUSD',0.1,100,'XAU','USD',2);
+  ['EURUSD','GBPUSD','AUDUSD','NZDUSD'].forEach(s=>add(s,0.0001,100000,s.slice(0,3),'USD',5));
+  add('USDJPY',0.01,100000,'USD','JPY',3);
+  add('USDCHF',0.0001,100000,'USD','CHF',5);
+  add('USDCAD',0.0001,100000,'USD','CAD',5);
+  add('EURGBP',0.0001,100000,'EUR','GBP',5);
+  add('EURJPY',0.01,100000,'EUR','JPY',3);
+  add('GBPJPY',0.01,100000,'GBP','JPY',3);
+  add('AUDJPY',0.01,100000,'AUD','JPY',3);
+  add('EURAUD',0.0001,100000,'EUR','AUD',5);
+  add('EURCHF',0.0001,100000,'EUR','CHF',5);
+  add('GBPCHF',0.0001,100000,'GBP','CHF',5);
+})();
+
+const DEFAULT_SETTINGS={balance:10000,riskPct:1,maxDailyLossPct:3,utc:7,fx:{JPY:0.0066,GBP:1.30,AUD:0.66,CHF:1.12,CAD:0.72}};
+const isNum=v=>typeof v==='number'&&isFinite(v);
+const num=v=>{if(v===''||v==null)return null;const n=Number(v);return isFinite(n)?n:null};
+
+function pipValue(sym,price,fx){
+  const I=INSTR[sym];const q=I.contract*I.pip;
+  if(I.quote==='USD')return q;
+  if(I.base==='USD')return q/price;
+  return q*((fx&&fx[I.quote])||1);
+}
+
+function calcLot(balance,riskPct,slPips,pv){
+  if(!(slPips>0&&pv>0))return 0;
+  return Math.floor((balance*riskPct/100)/(slPips*pv)*100+1e-9)/100;
+}
+
+function calcTrade(t,s){
+  const I=INSTR[t.pair];if(!I||!isNum(t.entry)||!isNum(t.sl)||!isNum(t.lot))return null;
+  const pv=pipValue(t.pair,t.entry,s.fx);const dir=t.type==='Buy'?1:-1;
+  const slPips=Math.abs(t.entry-t.sl)/I.pip;
+  const tpPips=isNum(t.tp)?Math.abs(t.tp-t.entry)/I.pip:null;
+  const closed=isNum(t.exit);
+  const pips=closed?dir*(t.exit-t.entry)/I.pip:null;
+  const gross=closed?pips*pv*t.lot:null;
+  const net=closed?gross-(t.commission||0)+(t.swap||0):null;
+  const risk=slPips*pv*t.lot;
+  return{pv,slPips,tpPips,closed,pips,gross,net,risk,
+    riskPct:s.balance>0?risk/s.balance*100:null,
+    plannedRR:tpPips!=null&&slPips>0?tpPips/slPips:null,
+    actualRR:closed&&slPips>0?pips/slPips:null,
+    r:closed&&risk>0?net/risk:null}
+}
+
+function validateTrade(t,s){
+  const errs=[],warns=[];const I=INSTR[t.pair];
+  if(!t.dt)errs.push('Isi tanggal dan jam.');
+  if(!I)errs.push('Pilih pair.');
+  if(!(t.entry>0))errs.push('Entry harus lebih dari 0.');
+  if(!(t.sl>0))errs.push('Stop loss wajib diisi.');
+  if(!(t.lot>0))errs.push('Lot harus lebih dari 0.');
+  if(t.entry>0&&t.sl>0){
+    if(t.type==='Buy'&&t.sl>=t.entry)errs.push('Untuk Buy, SL harus di bawah entry.');
+    if(t.type==='Sell'&&t.sl<=t.entry)errs.push('Untuk Sell, SL harus di atas entry.')}
+  if(t.entry>0&&isNum(t.tp)){
+    if(t.type==='Buy'&&t.tp<=t.entry)errs.push('Untuk Buy, TP harus di atas entry.');
+    if(t.type==='Sell'&&t.tp>=t.entry)errs.push('Untuk Sell, TP harus di bawah entry.')}
+  if(isNum(t.exit)&&!(t.exit>0))errs.push('Exit harus lebih dari 0.');
+  if(!errs.length){const c=calcTrade(t,s);
+    if(c&&c.riskPct>s.riskPct*1.1)warns.push('Risiko '+c.riskPct.toFixed(2)+'% dari modal melebihi aturan '+s.riskPct+'% per trade.')}
+  return{errs,warns};
+}
+
+function metrics(list,startBal){
+  const n=list.length;const wins=list.filter(x=>x.net>0);const losses=list.filter(x=>x.net<0);
+  const gw=wins.reduce((a,x)=>a+x.net,0);const gl=-losses.reduce((a,x)=>a+x.net,0);
+  const net=list.reduce((a,x)=>a+x.net,0);const rs=list.filter(x=>isNum(x.r));
+  let eq=startBal,peak=startBal,dd=0;
+  list.forEach(x=>{eq+=x.net;if(eq>peak)peak=eq;if(peak>0){const d=(peak-eq)/peak;if(d>dd)dd=d}});
+  return{n,wins:wins.length,losses:losses.length,winRate:n?wins.length/n*100:null,gw,gl,
+    pf:gl>0?gw/gl:(gw>0?Infinity:null),net,expectancy:n?net/n:null,
+    avgR:rs.length?rs.reduce((a,x)=>a+x.r,0)/rs.length:null,
+    avgWin:wins.length?gw/wins.length:null,avgLoss:losses.length?-gl/losses.length:null,maxDD:dd*100,endEq:eq}
+}
+
+function equitySeries(list,startBal){let eq=startBal;const out=[{i:0,dt:null,eq,net:0}];
+  list.forEach((x,k)=>{eq+=x.net;out.push({i:k+1,dt:x.dt,eq,net:x.net})});return out}
+function sessionOf(dt,utc){const h=parseInt(dt.slice(11,13),10);if(isNaN(h))return'—';const u=((h-utc)%24+24)%24;
+  return u<7?'Asian':u<12?'London':u<21?'New York':'Off-hours'}
+function weekStart(ds){const d=new Date(ds.slice(0,10)+'T00:00:00Z');const dow=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-dow);return d.toISOString().slice(0,10)}
+function addDays(ds,n){const d=new Date(ds.slice(0,10)+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
+
+function btCompute(bt,s){
+  const tr=[...bt.trades].sort((a,b)=>(a.dt||'').localeCompare(b.dt||''));let eq=bt.capital;const rows=[];
+  tr.forEach(t=>{const I=INSTR[t.pair];if(!I||!(t.entry>0)||!(t.sl>0))return;
+    const pv=pipValue(t.pair,t.entry,s.fx);const slPips=Math.abs(t.entry-t.sl)/I.pip;
+    const lot=Math.max(0.01,calcLot(eq,bt.risk,slPips,pv));
+    const c=calcTrade({...t,lot,commission:0,swap:0},s);if(!c)return;
+    const net=c.net;eq+=(net||0);rows.push({...t,lot,c,net,r:c.r,eq})});
+  return rows}
+
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function genSample(today,s){
+  const rnd=mulberry(20261110);const maps=[],trades=[];
+  const base={XAUUSD:4180,EURUSD:1.16,GBPUSD:1.32,USDJPY:152};
+  const setups=['Order Block','Supply/Demand','Liquidity Sweep','Trend Pullback','Breakout'];
+  const causes=['News Impact','Liquidity Sweep / Fakeout','Wrong Structure','Early Entry / Bad Timing'];
+  const pick=a=>a[Math.floor(rnd()*a.length)];
+  const start=addDays(weekStart(today),-35);let id=0;
+  for(let d=0;d<=35+((new Date(today+'T00:00:00Z').getUTCDay()+6)%7);d++){
+    const day=addDays(start,d);const dow=(new Date(day+'T00:00:00Z').getUTCDay()+6)%7;
+    if(dow>4||day>today)continue;
+    const pair=rnd()<.7?'XAUUSD':pick(['EURUSD','GBPUSD','USDJPY']);
+    const bias=pick(['Bullish','Bearish','Bullish','Bearish','Sideways']);
+    const hit=rnd()<.62;const past=day<today;
+    const m={id:'m_s'+(++id),kind:'map',sample:true,date:day,session:pick(['London','New York','London']),pair,bias,
+      levels:'Supply '+(base[pair]*(1.004)).toFixed(INSTR[pair].dec-(pair==='XAUUSD'?0:0))+'\nDemand '+(base[pair]*0.996).toFixed(INSTR[pair].dec),
+      before:'',after:'',status:!past?'Menunggu':hit?'HIT':'MISS',cause:(!past||hit)?'':pick(causes),notes:''};
+    maps.push(m);
+    if(past&&bias!=='Sideways'&&rnd()<.75){
+      const type=bias==='Bullish'?'Buy':'Sell';const dir=type==='Buy'?1:-1;const I=INSTR[pair];
+      const slPips=pair==='XAUUSD'?30+Math.floor(rnd()*30):pair==='USDJPY'?18+Math.floor(rnd()*14):10+Math.floor(rnd()*10);
+      const rr=1.5+Math.floor(rnd()*3)*.5;const entry=+(base[pair]*(1+(rnd()-.5)*.004)).toFixed(I.dec);
+      const sl=+(entry-dir*slPips*I.pip).toFixed(I.dec);const tp=+(entry+dir*slPips*rr*I.pip).toFixed(I.dec);
+      const win=rnd()<(hit?.64:.34);const mode=rnd();
+      const exit=win?tp:(mode<.8?sl:+(entry-dir*slPips*I.pip*.3).toFixed(I.dec));
+      const pv=pipValue(pair,entry,s.fx);const lot=Math.max(0.01,calcLot(s.balance,s.riskPct*(rnd()<.1?1.8:1),slPips,pv));
+      const hr=m.session==='London'?14+Math.floor(rnd()*4):19+Math.floor(rnd()*3);
+      const tag=win?pick(['Sesuai rencana','Sesuai rencana','Sabar']):pick(['FOMO','Revenge','Sesuai rencana','FOMO']);
+      trades.push({id:'t_s'+id,kind:'trade',sample:true,dt:day+'T'+String(hr).padStart(2,'0')+':'+pick(['05','20','45']),pair,type,entry,exit,sl,tp,lot,
+        spread:pair==='XAUUSD'?2.5:0.8,commission:+(lot*7).toFixed(2),swap:0,setup:pick(setups),tag,discipline:win?4+Math.floor(rnd()*2):1+Math.floor(rnd()*3),notes:''})}}
+  return{maps,trades}}
+
+/* APP STORAGE & FIREBASE ENGINE */
+const docs=new Map();let mode='local',sampleDismissed=false;
+const LS='meja-trader-v1';
+
+function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2600)}
+function persistLocal(){try{localStorage.setItem(LS,JSON.stringify({docs:[...docs.values()],sampleDismissed}))}catch(e){}}
+function loadLocal(){try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(j){docs.clear();j.docs.forEach(d=>docs.set(d.id,d));sampleDismissed=!!j.sampleDismissed}}catch(e){}}
+
+async function saveDoc(d){
+  docs.set(d.id,d);
+  if(mode==='db' && window.fbSetDoc){
+    try{
+      await window.fbSetDoc(window.fbDocFunc(window.fbDb, "users", "default_trader", "journals", d.id), d);
+    }catch(e){
+      console.error("Firebase sync error:", e);
+    }
+  } else {
+    persistLocal();
+  }
+  onData();
+}
+
+async function removeDoc(id){
+  docs.delete(id);
+  if(mode==='db' && window.fbDeleteDoc){
+    try{
+      await window.fbDeleteDoc(window.fbDocFunc(window.fbDb, "users", "default_trader", "journals", id));
+    }catch(e){
+      console.error("Firebase delete error:", e);
+    }
+  } else {
+    persistLocal();
+  }
+  onData();
+}
+
+function isBlank(){return[...docs.values()].filter(d=>d.kind!=='settings'&&d.kind!=='flag').length===0}
+let S=null;
+function build(){
+  const all=[...docs.values()];const st=all.find(d=>d.id==='settings')||{};
+  const settings={...DEFAULT_SETTINGS,...st,fx:{...DEFAULT_SETTINGS.fx,...(st.fx||{})}};
+  const real={maps:all.filter(d=>d.kind==='map'),trades:all.filter(d=>d.kind==='trade'),bts:all.filter(d=>d.kind==='bt'),revs:all.filter(d=>d.kind==='rev')};
+  const flag=all.find(d=>d.id==='flag');if(flag&&flag.sampleDismissed)sampleDismissed=true;
+  const sample=isBlank()&&!sampleDismissed;let maps=real.maps,trades=real.trades;
+  if(sample){const g=genSample(todayStr(),settings);maps=g.maps;trades=g.trades}
+  maps=[...maps].sort((a,b)=>b.date.localeCompare(a.date));trades=[...trades].sort((a,b)=>a.dt.localeCompare(b.dt));
+  S={settings,maps,trades,bts:real.bts,revs:real.revs,sample}}
+
+function updateChip(){$('#storeChip').textContent=S&&S.sample?'data contoh':mode==='db'?'Firebase Cloud':'Tersimpan di Browser'}
+function onData(){build();updateChip();renderBanner();(VIEWS[cur]||{}).refresh?.()}
+
+/* DERIVED UTILS */
+function closedTrades(list,s){return list.map(t=>({t,c:calcTrade(t,s)})).filter(x=>x.c&&x.c.closed).map(x=>({...x.t,c:x.c,net:x.c.net,r:x.c.r}))}
+function inPeriod(dateStr,p){if(p==='all')return true;const from=addDays(todayStr(),-(p==='7'?7:30));return dateStr.slice(0,10)>=from}
+function ymd(x){return(x.dt||x.date||'').slice(0,10)}
+
+/* CHARTS */
+function niceRange(min,max){if(min===max){min-=1;max+=1}const span=max-min;const raw=span/4;const p=Math.pow(10,Math.floor(Math.log10(raw)));
+  const step=[1,2,2.5,5,10].map(m=>m*p).find(x=>x>=raw);const lo=Math.floor(min/step)*step,hi=Math.ceil(max/step)*step;const ticks=[];for(let v=lo;v<=hi+1e-9;v+=step)ticks.push(+v.toFixed(8));return{lo,hi,ticks}}
+const CH={};
+function equityChart(id,series,startBal){
+  CH[id]=series;if(series.length<2)return'<div class="empty">Belum ada trade tertutup pada periode ini.</div>';
+  const W=720,H=250,L=58,R=18,T=12,B=26;const ys=series.map(p=>p.eq).concat([startBal]);
+  const nr=niceRange(Math.min(...ys),Math.max(...ys));const X=i=>L+(W-L-R)*i/(series.length-1);const Y=v=>T+(H-T-B)*(1-(v-nr.lo)/(nr.hi-nr.lo));
+  const pts=series.map((p,i)=>X(i).toFixed(1)+','+Y(p.eq).toFixed(1));const last=series[series.length-1];
+  const grid=nr.ticks.map(v=>`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)" stroke-width="1"/><text x="${L-8}" y="${Y(v)+4}" text-anchor="end">${Math.round(v).toLocaleString('en-US')}</text>`).join('');
+  const d0=series[1].dt?series[1].dt.slice(5,10):'',d1=last.dt?last.dt.slice(5,10):'';
+  return`<div class="chartbox"><svg class="ch eq" data-id="${id}" viewBox="0 0 ${W} ${H}" role="img">
+    ${grid}<line x1="${L}" x2="${W-R}" y1="${Y(startBal)}" y2="${Y(startBal)}" stroke="var(--axis)" stroke-dasharray="3 4"/>
+    <polygon points="${L},${Y(nr.lo)} ${pts.join(' ')} ${X(series.length-1)},${Y(nr.lo)}" fill="var(--s1)" fill-opacity=".10"/>
+    <polyline points="${pts.join(' ')}" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <text x="${L}" y="${H-6}">${esc(d0)}</text><text x="${W-R}" y="${H-6}" text-anchor="end">${esc(d1)}</text>
+    <line class="xh" x1="0" x2="0" y1="${T}" y2="${H-B}" stroke="var(--axis)" visibility="hidden"/>
+    <circle class="dot" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>
+    <circle cx="${X(series.length-1)}" cy="${Y(last.eq)}" r="5" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/>
+    </svg><div class="tip" hidden></div></div>`}
+
+document.addEventListener('pointermove',e=>{
+  const svg=e.target.closest&&e.target.closest('svg.eq');document.querySelectorAll('svg.eq').forEach(s=>{if(s!==svg){s.querySelector('.xh').setAttribute('visibility','hidden');s.querySelector('.dot').setAttribute('visibility','hidden');s.parentNode.querySelector('.tip').hidden=true}});
+  if(!svg)return;const ser=CH[svg.dataset.id];if(!ser)return;const vb=svg.viewBox.baseVal;const r=svg.getBoundingClientRect();
+  const x=(e.clientX-r.left)/r.width*vb.width;const L=58,R=18;let i=Math.round((x-L)/(vb.width-L-R)*(ser.length-1));i=Math.max(0,Math.min(ser.length-1,i));
+  const p=ser[i];const nx=L+(vb.width-L-R)*i/(ser.length-1);
+  const ys=ser.map(q=>q.eq);const nr=niceRange(Math.min(...ys,ser[0].eq),Math.max(...ys,ser[0].eq));const T=12,B=26;const ny=T+(vb.height-T-B)*(1-(p.eq-nr.lo)/(nr.hi-nr.lo));
+  const xh=svg.querySelector('.xh'),dot=svg.querySelector('.dot');xh.setAttribute('x1',nx);xh.setAttribute('x2',nx);xh.setAttribute('visibility','visible');
+  dot.setAttribute('cx',nx);dot.setAttribute('cy',ny);dot.setAttribute('visibility','visible');
+  const tip=svg.parentNode.querySelector('.tip');tip.hidden=false;tip.style.left=(nx/vb.width*r.width)+'px';tip.style.top=(ny/vb.height*r.height)+'px';
+  tip.textContent=(p.i===0?'Modal awal':'Trade '+p.i+(p.dt?' · '+p.dt.slice(5,10):''))+' · $'+f2(p.eq)+(p.i?' ('+money(p.net)+')':'')});
+
+function sessionBars(items){
+  const W=420,H=210,L=52,R=10,T=22,B=40;const vals=items.map(i=>i.net);const nr=niceRange(Math.min(0,...vals),Math.max(0,...vals));
+  const Y=v=>T+(H-T-B)*(1-(v-nr.lo)/(nr.hi-nr.lo));const bw=Math.min(64,(W-L-R)/items.length*.55);const colors=['var(--s3)','var(--s1)','var(--s2)'];
+  const grid=nr.ticks.map(v=>`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)"/><text x="${L-8}" y="${Y(v)+4}" text-anchor="end">${Math.round(v).toLocaleString('en-US')}</text>`).join('');
+  const bars=items.map((it,k)=>{const cx=L+(W-L-R)*(k+.5)/items.length;const y0=Y(0),y1=Y(it.net);const top=Math.min(y0,y1),h=Math.max(2,Math.abs(y1-y0));
+    const lab=it.n?money(it.net,0):'—';const ly=it.net>=0?top-6:top+h+13;
+    return`<g><title>${esc(it.name)}: ${it.n} trade, net ${money(it.net)}</title>
+    ${it.n?`<rect x="${cx-bw/2}" y="${top}" width="${bw}" height="${h}" rx="3" fill="${colors[k%3]}"/>`:''}
+    <text x="${cx}" y="${ly}" text-anchor="middle" style="fill:var(--ink)">${lab}</text>
+    <text x="${cx}" y="${H-20}" text-anchor="middle">${esc(it.name)}</text><text x="${cx}" y="${H-7}" text-anchor="middle">${it.n} trade</text></g>`}).join('');
+  return`<svg class="ch" viewBox="0 0 ${W} ${H}">${grid}<line x1="${L}" x2="${W-R}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--axis)"/>${bars}</svg>`}
+
+function hbars(items,unit){
+  if(!items.some(i=>i.v>0))return'<div class="empty">Belum ada data.</div>';const mx=Math.max(...items.map(i=>i.v));
+  return`<div style="display:grid;gap:10px">${items.map(i=>`<div><div class="row" style="justify-content:space-between;font-size:13px"><span>${esc(i.name)}</span><span class="num">${i.v}${unit||''}</span></div><div class="bar"><i style="width:${mx?i.v/mx*100:0}%"></i></div></div>`).join('')}</div>`}
+
+/* UI VIEWS ROUTING */
+const MODULES=[['ringkasan','Ringkasan'],['mapping','Mapping'],['jurnal','Jurnal'],['backtest','Backtest'],['kalkulator','Kalkulator'],['pengaturan','Pengaturan']];
+const MISS_CAUSES=['News Impact','Liquidity Sweep / Fakeout','Wrong Structure','Early Entry / Bad Timing'];
+const SETUPS=['Order Block','Supply/Demand','Liquidity Sweep','Trend Pullback','Breakout','Lainnya'];
+const TAGS=['Sesuai rencana','Sabar','FOMO','Revenge'];
+const SESSIONS=['Asian','London','New York'];
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const f2=(n,d=2)=>isNum(n)?n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
+const money=(n,d=2)=>!isNum(n)?'—':(n<0?'-':n>0?'+':'')+'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const cls=n=>!isNum(n)||n===0?'':n>0?'pos':'neg';
+const arrow=n=>!isNum(n)||n===0?'':n>0?'▲ ':'▼ ';
+const pf=n=>n===Infinity?'∞':isNum(n)?n.toFixed(2):'—';
+const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const nowLocal=()=>todayStr()+'T'+new Date().toTimeString().slice(0,5);
+const uid=p=>p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+const VIEWS={};let cur='ringkasan';const flt={period:'all',reviewWeek:null,editMap:null,editTrade:null,btSel:null,mapFilter:'all'};
+function renderTabs(){$('#tabs').innerHTML=MODULES.map(([k,l])=>`<a href="#${k}" ${k===cur?'aria-current="page"':''}>${l}</a>`).join('')}
+function renderBanner(){const b=$('#banner');
+  b.innerHTML=S&&S.sample?`<div class="banner info"><span>Anda melihat <b>data contoh</b> (XAUUSD dan beberapa pair). Simpan catatan pertama Anda untuk menggantinya.</span><button id="dismissSample">Mulai dari kosong</button></div>`:''}
+document.addEventListener('click',e=>{if(e.target.id==='dismissSample'){sampleDismissed=true;saveDoc({id:'flag',kind:'flag',sampleDismissed:true});toast('Data contoh disembunyikan')}});
+function route(){const h=location.hash.slice(1);cur=VIEWS[h]?h:'ringkasan';renderTabs();VIEWS[cur].mount();window.scrollTo(0,0)}
+window.addEventListener('hashchange',route);
+
+/* Ringkasan Module */
+VIEWS.ringkasan={
+  mount(){$('#app').innerHTML=`<div class="row" style="margin-bottom:14px"><h2 style="margin:0">Ringkasan performa</h2><span class="sp"></span>
+    <div class="chips" id="per"></div></div><div id="rk"></div>`;
+    $('#per').innerHTML=[['all','Semua'],['30','30 hari'],['7','7 hari']].map(([k,l])=>`<button data-p="${k}" aria-pressed="${flt.period===k}">${l}</button>`).join('');
+    $('#per').onclick=e=>{const b=e.target.closest('button');if(!b)return;flt.period=b.dataset.p;[...$('#per').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.p===flt.period));this.refresh()};
+    this.refresh()},
+  refresh(){const el=$('#rk');if(!el)return;const s=S.settings;
+    const allClosed=closedTrades(S.trades,s);const before=allClosed.filter(t=>flt.period!=='all'&&!inPeriod(t.dt,flt.period));
+    const startBal=s.balance+before.reduce((a,t)=>a+t.net,0);const cl=allClosed.filter(t=>inPeriod(t.dt,flt.period));
+    const m=metrics(cl,startBal);const maps=S.maps.filter(x=>inPeriod(x.date,flt.period));
+    const judged=maps.filter(x=>x.status==='HIT'||x.status==='MISS');const acc=judged.length?judged.filter(x=>x.status==='HIT').length/judged.length*100:null;
+    const ser=equitySeries(cl,startBal);
+    const sess=SESSIONS.map(n=>{const l=cl.filter(t=>sessionOf(t.dt,s.utc)===n);const mm=metrics(l,0);return{name:n,n:l.length,net:mm.net,wr:mm.winRate}});
+    const miss=MISS_CAUSES.map(c=>({name:c,v:maps.filter(x=>x.status==='MISS'&&x.cause===c).length})).sort((a,b)=>b.v-a.v);
+    const mapIdx={};S.maps.forEach(x=>{mapIdx[x.date+'|'+x.pair]=x});
+    const grp={HIT:[],MISS:[],none:[]};cl.forEach(t=>{const mp=mapIdx[ymd(t)+'|'+t.pair];(mp&&mp.status==='HIT'?grp.HIT:mp&&mp.status==='MISS'?grp.MISS:grp.none).push(t)});
+    const wr=l=>l.length?l.filter(t=>t.net>0).length/l.length*100:null;
+    let insight='Data belum cukup untuk membandingkan mapping dengan eksekusi.';
+    if(grp.HIT.length>=3&&acc!==null){const w=wr(grp.HIT);insight=acc>=60&&w<50?'Mapping Anda sering benar, tetapi eksekusi pada hari HIT masih lemah.':'Pada hari mapping HIT, eksekusi Anda konsisten.'}
+    const overRisk=cl.filter(t=>t.c.riskPct>s.riskPct*1.1).length;
+    const byDay={};cl.forEach(t=>{byDay[ymd(t)]=(byDay[ymd(t)]||0)+t.net});
+    const badDays=Object.entries(byDay).filter(([d,v])=>v<0&&-v>s.balance*s.maxDailyLossPct/100).map(x=>x[0]);
+    const tagRows=g=>g.map(([name,l])=>{const mm=metrics(l,0);return`<tr><td>${esc(name)}</td><td class="r num">${mm.n}</td><td class="r num">${isNum(mm.winRate)?mm.winRate.toFixed(0)+'%':'—'}</td><td class="r num ${cls(mm.avgR)}">${isNum(mm.avgR)?f2(mm.avgR)+'R':'—'}</td><td class="r num ${cls(mm.net)}">${money(mm.net,0)}</td></tr>`}).join('');
+    const byTag=TAGS.map(t=>[t,cl.filter(x=>x.tag===t)]).filter(x=>x[1].length);const bySetup=SETUPS.map(t=>[t,cl.filter(x=>x.setup===t)]).filter(x=>x[1].length);
+    const weeks=[];let w=weekStart(todayStr());for(let i=0;i<6;i++){weeks.push(w);w=addDays(w,-7)}
+    const wkRows=weeks.map(w0=>{const l=S.maps.filter(x=>weekStart(x.date)===w0&&(x.status==='HIT'||x.status==='MISS'));const a=l.length?l.filter(x=>x.status==='HIT').length/l.length*100:null;
+      return`<tr><td class="num">${w0.slice(5)}</td><td class="r num">${l.length}</td><td class="r num">${isNum(a)?a.toFixed(0)+'%':'—'}</td><td style="width:40%"><div class="bar"><i style="width:${a||0}%"></i></div></td></tr>`}).join('');
+    el.innerHTML=`
+    <div class="kpis">
+      <div class="kpi hero"><div class="l">Net P&amp;L</div><div class="v ${cls(m.net)}">${m.n?arrow(m.net)+money(m.net):'—'}</div><div class="s">${m.n} trade tertutup · ekuitas $${f2(m.endEq)}</div></div>
+      <div class="kpi"><div class="l">Win rate</div><div class="v">${isNum(m.winRate)?m.winRate.toFixed(1)+'%':'—'}</div><div class="s">${m.wins}W / ${m.losses}L</div></div>
+      <div class="kpi"><div class="l">Profit factor</div><div class="v">${pf(m.pf)}</div><div class="s">rata-rata menang ${money(m.avgWin,0)}</div></div>
+      <div class="kpi"><div class="l">Expectancy</div><div class="v ${cls(m.expectancy)}">${money(m.expectancy)}</div><div class="s">per trade</div></div>
+      <div class="kpi"><div class="l">Avg R</div><div class="v ${cls(m.avgR)}">${isNum(m.avgR)?f2(m.avgR)+'R':'—'}</div><div class="s">kelipatan risiko</div></div>
+      <div class="kpi"><div class="l">Max drawdown</div><div class="v">${m.n?m.maxDD.toFixed(1)+'%':'—'}</div><div class="s">dari puncak ekuitas</div></div>
+      <div class="kpi"><div class="l">Akurasi mapping</div><div class="v">${isNum(acc)?acc.toFixed(0)+'%':'—'}</div><div class="s">${judged.length} mapping dinilai</div></div>
+    </div>
+    <div class="card" style="margin-bottom:16px"><h3>Kurva ekuitas</h3>${equityChart('eq1',ser,startBal)}</div>
+    <div class="grid g2">
+      <div class="card"><h3>Net P&amp;L per sesi</h3>${sessionBars(sess)}</div>
+      <div class="card"><h3>Penyebab mapping MISS</h3>${hbars(miss,' kali')}</div>
+    </div>
+    <div class="grid g2">
+      <div class="card"><h3>Mapping vs eksekusi</h3>
+        <div class="tbl-wrap"><table><thead><tr><th>Hari</th><th class="r">Trade</th><th class="r">Win rate</th><th class="r">Net</th></tr></thead><tbody>
+        ${[['Mapping HIT',grp.HIT],['Mapping MISS',grp.MISS],['Tanpa mapping',grp.none]].map(([n,l])=>`<tr><td>${n}</td><td class="r num">${l.length}</td><td class="r num">${isNum(wr(l))?wr(l).toFixed(0)+'%':'—'}</td><td class="r num ${cls(metrics(l,0).net)}">${l.length?money(metrics(l,0).net,0):'—'}</td></tr>`).join('')}
+        </tbody></table></div><p class="note" style="margin:10px 0 0">${insight}</p></div>
+      <div class="card"><h3>Akurasi mapping per minggu</h3><div class="tbl-wrap"><table><thead><tr><th>Minggu (Sen)</th><th class="r">Dinilai</th><th class="r">Akurasi</th><th></th></tr></thead><tbody>${wkRows}</tbody></table></div></div>
+    </div>
+    <div class="grid g2">
+      <div class="card"><h3>Kepatuhan aturan</h3>
+        <p style="margin:0 0 6px">Trade melewati batas risiko ${s.riskPct}%: <b class="num ${overRisk?'neg':'pos'}">${overRisk}</b></p>
+        <p style="margin:0">Hari melewati batas rugi harian ${s.maxDailyLossPct}%: <b class="num ${badDays.length?'neg':'pos'}">${badDays.length}</b></p></div>
+      <div class="card"><h3>Perilaku &amp; setup</h3>
+        <div class="tbl-wrap"><table><thead><tr><th>Tag</th><th class="r">N</th><th class="r">Win</th><th class="r">Avg R</th><th class="r">Net</th></tr></thead><tbody>${tagRows(byTag)||'<tr><td colspan="5" class="mut">Belum ada data.</td></tr>'}</tbody></table></div>
+        <div class="tbl-wrap" style="margin-top:12px"><table><thead><tr><th>Setup</th><th class="r">N</th><th class="r">Win</th><th class="r">Avg R</th><th class="r">Net</th></tr></thead><tbody>${tagRows(bySetup)||'<tr><td colspan="5" class="mut">Belum ada data.</td></tr>'}</tbody></table></div></div>
+    </div>
+    <div id="weekly"></div>`;
+    this.weekly()},
+  weekly(){const el=$('#weekly');if(!el)return;const wk=flt.reviewWeek||weekStart(todayStr());const rev=S.revs.find(r=>r.id==='rev_'+wk)||{};
+    const wm=S.maps.filter(x=>weekStart(x.date)===wk&&(x.status==='HIT'||x.status==='MISS'));const a=wm.length?wm.filter(x=>x.status==='HIT').length/wm.length*100:null;
+    const wt=closedTrades(S.trades,S.settings).filter(t=>weekStart(t.dt)===wk);const mm=metrics(wt,0);
+    el.innerHTML=`<div class="card"><div class="row"><h2 style="margin:0">Review mingguan</h2><span class="sp"></span>
+      <button class="ghost" id="wkPrev">← Minggu lalu</button><b class="num">${wk}</b><button class="ghost" id="wkNext">Berikutnya →</button></div>
+      <p class="note" style="margin:6px 0 12px">Akurasi mapping ${isNum(a)?a.toFixed(0)+'%':'—'} (${wm.length} dinilai) · win rate eksekusi ${isNum(mm.winRate)?mm.winRate.toFixed(0)+'%':'—'} (${mm.n} trade) · net ${money(mm.net,0)}</p>
+      <form id="wkForm" class="fg" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))">
+      ${[1,2,3].map(i=>`<label class="f">Evaluasi ${i}<textarea name="e${i}" ${S.sample?'disabled':''}>${esc(rev['e'+i]||'')}</textarea></label>`).join('')}
+      <label class="f">Target perbaikan minggu depan<textarea name="goal" ${S.sample?'disabled':''}>${esc(rev.goal||'')}</textarea></label></form>
+      <div class="row" style="margin-top:10px"><button class="primary" id="wkSave" ${S.sample?'disabled':''}>Simpan review</button></div></div>`;
+    $('#wkPrev').onclick=()=>{flt.reviewWeek=addDays(wk,-7);this.weekly()};$('#wkNext').onclick=()=>{flt.reviewWeek=addDays(wk,7);this.weekly()};
+    $('#wkSave').onclick=()=>{const fd=new FormData($('#wkForm'));saveDoc({id:'rev_'+wk,kind:'rev',week:wk,e1:fd.get('e1'),e2:fd.get('e2'),e3:fd.get('e3'),goal:fd.get('goal')});toast('Review tersimpan')}}
+};
+
+/* Mapping Module */
+VIEWS.mapping={
+  mount(){const e=S.maps.find(x=>x.id===flt.editMap&&!x.sample)||{};const pair=e.pair||'XAUUSD';
+    $('#app').innerHTML=`<div class="card" style="margin-bottom:16px"><h2>${e.id?'Ubah mapping':'Mapping baru'}</h2>
+    <form id="mf"><div class="fg">
+      <label class="f">Tanggal<input type="date" name="date" value="${esc(e.date||todayStr())}" required></label>
+      <label class="f">Sesi<select name="session">${SESSIONS.map(x=>`<option ${x===(e.session||'London')?'selected':''}>${x}</option>`).join('')}</select></label>
+      <label class="f">Instrumen<select name="pair">${Object.keys(INSTR).map(x=>`<option ${x===pair?'selected':''}>${x}</option>`).join('')}</select></label>
+      <label class="f">Daily bias<select name="bias">${['Bullish','Bearish','Sideways'].map(x=>`<option ${x===(e.bias||'Bullish')?'selected':''}>${x}</option>`).join('')}</select></label></div>
+      <div class="fg" style="margin-top:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))">
+      <label class="f">Key level / POI<textarea name="levels">${esc(e.levels||'')}</textarea></label>
+      <label class="f">Link screenshot BEFORE<input type="url" name="before" placeholder="https://www.tradingview.com/x/…" value="${esc(e.before||'')}"></label>
+      <label class="f">Catatan<textarea name="notes">${esc(e.notes||'')}</textarea></label></div>
+      <h3 style="margin-top:16px">Post-market review</h3>
+      <div class="fg"><label class="f">Status<select name="status" id="mstatus">${['Menunggu','HIT','MISS'].map(x=>`<option ${x===(e.status||'Menunggu')?'selected':''}>${x}</option>`).join('')}</select></label>
+      <label class="f" id="causeWrap">Penyebab MISS<select name="cause"><option value="">Pilih…</option>${MISS_CAUSES.map(x=>`<option ${x===e.cause?'selected':''}>${x}</option>`).join('')}</select></label>
+      <label class="f">Link screenshot AFTER<input type="url" name="after" placeholder="https://…" value="${esc(e.after||'')}"></label></div>
+      <div class="errs" id="merr"></div>
+      <div class="row" style="margin-top:12px"><button class="primary" type="submit">Simpan mapping</button>${e.id?'<button type="button" id="mcancel">Batal</button>':''}</div></form></div>
+    <div class="row" style="margin-bottom:10px"><h2 style="margin:0">Log mapping</h2><span class="sp"></span><div class="chips" id="mfl"></div></div><div id="ml"></div>`;
+    const sync=()=>{$('#causeWrap').hidden=$('#mstatus').value!=='MISS'};$('#mstatus').onchange=sync;sync();
+    $('#mf').onsubmit=ev=>{ev.preventDefault();const fd=new FormData(ev.target);const o=Object.fromEntries(fd);
+      if(o.status==='MISS'&&!o.cause){$('#merr').textContent='Pilih penyebab MISS.';return}
+      if(o.status!=='MISS')o.cause='';saveDoc({id:e.id||uid('m'),kind:'map',...o});flt.editMap=null;toast('Mapping tersimpan');this.mount()};
+    const c=$('#mcancel');if(c)c.onclick=()=>{flt.editMap=null;this.mount()};
+    $('#mfl').innerHTML=['all','Menunggu','HIT','MISS'].map(k=>`<button data-k="${k}" aria-pressed="${flt.mapFilter===k}">${k==='all'?'Semua':k}</button>`).join('');
+    $('#mfl').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;flt.mapFilter=b.dataset.k;[...$('#mfl').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.k===flt.mapFilter));this.refresh()};
+    this.refresh()},
+  refresh(){const el=$('#ml');if(!el)return;const l=S.maps.filter(x=>flt.mapFilter==='all'||x.status===flt.mapFilter);
+    if(!l.length){el.innerHTML='<div class="card empty">Belum ada mapping. Isi bias dan key level di atas sebelum sesi dimulai.</div>';return}
+    el.innerHTML=`<div class="tbl-wrap"><table><thead><tr><th>Tanggal</th><th>Sesi</th><th>Pair</th><th>Bias</th><th>Status</th><th>Penyebab</th><th>Key level</th><th>Chart</th><th></th></tr></thead><tbody>${l.map(x=>`<tr>
+      <td class="num">${esc(x.date)}</td><td>${esc(x.session)}</td><td class="num">${esc(x.pair)}</td><td>${esc(x.bias)}</td>
+      <td><span class="pill ${x.status==='HIT'?'hit':x.status==='MISS'?'miss':'wait'}">${x.status==='HIT'?'✓ HIT':x.status==='MISS'?'✕ MISS':'… Menunggu'}</span></td>
+      <td>${esc(x.cause||'')}</td><td class="wrapc">${esc(x.levels||'').replace(/\n/g,'<br>')}</td>
+      <td>${x.before?`<a href="${esc(x.before)}" target="_blank" rel="noopener">Before</a>`:''} ${x.after?`<a href="${esc(x.after)}" target="_blank" rel="noopener">After</a>`:''}</td>
+      <td>${x.sample?'<span class="note">contoh</span>':`<button class="ghost" data-e="${x.id}">Ubah</button><button class="ghost danger" data-d="${x.id}">Hapus</button>`}</td></tr>`).join('')}</tbody></table></div>`;
+    el.onclick=ev=>{const b=ev.target.closest('button');if(!b)return;
+      if(b.dataset.e){flt.editMap=b.dataset.e;this.mount();window.scrollTo(0,0)}
+      if(b.dataset.d){if(b.dataset.armed){removeDoc(b.dataset.d);toast('Mapping dihapus')}else{b.dataset.armed=1;b.textContent='Yakin hapus?'}}}}
+};
+
+/* Jurnal Module */
+function readTrade(f){const g=n=>f.elements[n].value;return{dt:g('dt'),pair:g('pair'),type:g('type'),entry:num(g('entry')),exit:num(g('exit')),sl:num(g('sl')),tp:num(g('tp')),lot:num(g('lot')),
+  spread:num(g('spread')),commission:num(g('commission'))||0,swap:num(g('swap'))||0,setup:g('setup'),tag:g('tag'),discipline:num(g('discipline')),notes:g('notes')}}
+VIEWS.jurnal={
+  mount(){const e=S.trades.find(x=>x.id===flt.editTrade&&!x.sample)||{};const pair=e.pair||'XAUUSD';const v=(k,d='')=>esc(e[k]??d);
+    $('#app').innerHTML=`<div class="card" style="margin-bottom:16px"><h2>${e.id?'Ubah transaksi':'Transaksi baru'}</h2>
+    <form id="tf"><div class="fg">
+      <label class="f">Tanggal &amp; jam<input type="datetime-local" name="dt" value="${esc(e.dt||nowLocal())}" required></label>
+      <label class="f">Pair<select name="pair">${Object.keys(INSTR).map(x=>`<option ${x===pair?'selected':''}>${x}</option>`).join('')}</select></label>
+      <label class="f">Tipe<select name="type"><option ${e.type!=='Sell'?'selected':''}>Buy</option><option ${e.type==='Sell'?'selected':''}>Sell</option></select></label>
+      <label class="f">Entry<input type="number" step="any" name="entry" value="${v('entry')}" required></label>
+      <label class="f">Stop loss<input type="number" step="any" name="sl" value="${v('sl')}" required></label>
+      <label class="f">Take profit<input type="number" step="any" name="tp" value="${v('tp')}"></label>
+      <label class="f">Exit<input type="number" step="any" name="exit" value="${v('exit')}"></label>
+      <label class="f">Lot<input type="number" step="0.01" min="0" name="lot" value="${v('lot')}" required></label></div>
+      <div class="fg" style="margin-top:12px">
+      <label class="f">Spread (pip)<input type="number" step="any" name="spread" value="${v('spread')}"></label>
+      <label class="f">Komisi ($)<input type="number" step="any" name="commission" value="${v('commission')}"></label>
+      <label class="f">Swap ($)<input type="number" step="any" name="swap" value="${v('swap')}"></label>
+      <label class="f">Setup<select name="setup">${SETUPS.map(x=>`<option ${x===e.setup?'selected':''}>${x}</option>`).join('')}</select></label>
+      <label class="f">Kondisi emosi<select name="tag">${TAGS.map(x=>`<option ${x===e.tag?'selected':''}>${x}</option>`).join('')}</select></label>
+      <label class="f">Disiplin (1–5)<select name="discipline">${[5,4,3,2,1].map(x=>`<option ${x===(e.discipline||4)?'selected':''}>${x}</option>`).join('')}</select></label></div>
+      <label class="f" style="margin-top:12px">Catatan<textarea name="notes">${v('notes')}</textarea></label>
+      <div class="preview" id="tprev"></div><div id="terr"></div>
+      <div class="row" style="margin-top:12px"><button class="primary" type="submit">Simpan transaksi</button><button type="button" id="autolot">Hitung lot otomatis</button>${e.id?'<button type="button" id="tcancel">Batal</button>':''}</div></form></div>
+    <div class="row" style="margin-bottom:10px"><h2 style="margin:0">Riwayat transaksi</h2><span class="sp"></span></div><div id="tl"></div>`;
+    const f=$('#tf');const prev=()=>{const t=readTrade(f);const {errs,warns}=validateTrade(t,S.settings);const c=calcTrade(t,S.settings);
+      $('#tprev').innerHTML=c&&t.entry>0&&t.sl>0&&t.lot>0?`<span>SL <b>${f2(c.slPips,1)}</b> pip</span><span>RRR <b>${c.plannedRR!=null?'1:'+f2(c.plannedRR):'—'}</b></span><span>Risiko <b>$${f2(c.risk)}</b> (${f2(c.riskPct)}%)</span>${c.closed?`<span>Hasil <b class="${cls(c.net)}">${money(c.net)}</b></span><span>R <b class="${cls(c.r)}">${f2(c.r)}R</b></span>`:''}`:'<span class="mut">Isi pair, entry, SL, dan lot untuk kalkulasi otomatis.</span>';
+      $('#terr').innerHTML=(errs.length&&f.dataset.touched?`<div class="errs">${errs.map(esc).join('<br>')}</div>`:'')+warns.map(w=>`<div class="warns">⚠ ${esc(w)}</div>`).join('')};
+    f.addEventListener('input',()=>{f.dataset.touched=1;prev()});prev();
+    $('#autolot').onclick=()=>{const t=readTrade(f);const I=INSTR[t.pair];if(!(t.entry>0&&t.sl>0)){toast('Isi entry dan SL dulu');return}
+      const pv=pipValue(t.pair,t.entry,S.settings.fx);const lot=calcLot(S.settings.balance,S.settings.riskPct,Math.abs(t.entry-t.sl)/I.pip,pv);f.elements.lot.value=lot;f.dataset.touched=1;prev()};
+    f.onsubmit=ev=>{ev.preventDefault();f.dataset.touched=1;const t=readTrade(f);const {errs}=validateTrade(t,S.settings);prev();if(errs.length)return;
+      saveDoc({id:e.id||uid('t'),kind:'trade',...t});flt.editTrade=null;toast('Transaksi tersimpan');this.mount()};
+    const c=$('#tcancel');if(c)c.onclick=()=>{flt.editTrade=null;this.mount()};
+    this.refresh()},
+  refresh(){const el=$('#tl');if(!el)return;const s=S.settings;
+    if(!S.trades.length){el.innerHTML='<div class="card empty">Belum ada transaksi. Catat entry pertama Anda di atas.</div>';return}
+    const rows=[...S.trades].reverse().map(t=>{const c=calcTrade(t,s)||{};return`<tr><td class="num">${esc(t.dt.replace('T',' '))}</td><td class="num">${esc(t.pair)}</td><td><span class="pill ${t.type==='Buy'?'buy':'sell'}">${t.type}</span></td>
+      <td class="r num">${t.entry}</td><td class="r num">${t.exit??'<span class="mut">terbuka</span>'}</td><td class="r num">${t.sl}</td><td class="r num">${t.tp??'—'}</td><td class="r num">${t.lot}</td>
+      <td class="r num ${cls(c.pips)}">${c.pips!=null?f2(c.pips,1):'—'}</td><td class="r num ${cls(c.net)}">${c.net!=null?arrow(c.net)+money(c.net):'—'}</td><td class="r num ${cls(c.r)}">${c.r!=null?f2(c.r)+'R':'—'}</td>
+      <td>${esc(t.setup||'')}</td><td>${esc(t.tag||'')}</td>
+      <td>${t.sample?'<span class="note">contoh</span>':`<button class="ghost" data-e="${t.id}">Ubah</button><button class="ghost danger" data-d="${t.id}">Hapus</button>`}</td></tr>`}).join('');
+    el.innerHTML=`<div class="tbl-wrap"><table><thead><tr><th>Waktu</th><th>Pair</th><th>Tipe</th><th class="r">Entry</th><th class="r">Exit</th><th class="r">SL</th><th class="r">TP</th><th class="r">Lot</th><th class="r">Pip</th><th class="r">Net</th><th class="r">R</th><th>Setup</th><th>Emosi</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    el.onclick=ev=>{const b=ev.target.closest('button');if(!b)return;
+      if(b.dataset.e){flt.editTrade=b.dataset.e;this.mount();window.scrollTo(0,0)}
+      if(b.dataset.d){if(b.dataset.armed){removeDoc(b.dataset.d);toast('Transaksi dihapus')}else{b.dataset.armed=1;b.textContent='Yakin hapus?'}}}}
+};
+
+/* Backtest Module */
+const TFS=['M5','M15','M30','H1','H4','D1'];
+VIEWS.backtest={
+  mount(){$('#app').innerHTML=`<div class="grid g2"><div class="card"><h2>Sesi backtest baru</h2>
+    <form id="bf" class="fg" style="grid-template-columns:1fr 1fr">
+      <label class="f" style="grid-column:1/-1">Nama strategi<input name="name" placeholder="mis. OB Retest H1 Gold" required></label>
+      <label class="f">Timeframe<select name="tf">${TFS.map(x=>`<option ${x==='H1'?'selected':''}>${x}</option>`).join('')}</select></label>
+      <label class="f">Modal awal ($)<input type="number" name="capital" step="any" min="1" value="10000" required></label>
+      <label class="f">Dari<input type="date" name="from"></label><label class="f">Sampai<input type="date" name="to"></label>
+      <label class="f" style="grid-column:1/-1">Risiko per trade (%)<input type="number" name="risk" step="0.1" min="0.1" value="1" required></label>
+      <div style="grid-column:1/-1"><button class="primary" type="submit">Buat sesi</button></div></form></div>
+      <div class="card"><h2>Sesi tersimpan</h2><div id="bl"></div></div></div><div id="bd"></div>`;
+    $('#bf').onsubmit=ev=>{ev.preventDefault();const o=Object.fromEntries(new FormData(ev.target));
+      const id=uid('b');saveDoc({id,kind:'bt',name:o.name,tf:o.tf,from:o.from,to:o.to,capital:+o.capital,risk:+o.risk,trades:[]});flt.btSel=id;toast('Sesi dibuat');this.refresh();ev.target.reset()};
+    this.refresh()},
+  refresh(){const l=$('#bl');if(!l)return;const s=S.settings;
+    l.innerHTML=S.bts.length?S.bts.map(b=>`<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line-2)"><button class="ghost" data-s="${b.id}" ${flt.btSel===b.id?'style="font-weight:700;color:var(--accent)"':''}>${esc(b.name)}</button><span class="note">${esc(b.tf)} · ${b.trades.length} posisi</span><span class="sp"></span><button class="ghost danger" data-d="${b.id}">Hapus</button></div>`).join(''):'<div class="empty">Belum ada sesi backtest.</div>';
+    l.onclick=ev=>{const b=ev.target.closest('button');if(!b)return;if(b.dataset.s){flt.btSel=b.dataset.s;this.refresh()}
+      if(b.dataset.d){if(b.dataset.armed){removeDoc(b.dataset.d);if(flt.btSel===b.dataset.d)flt.btSel=null;toast('Sesi dihapus')}else{b.dataset.armed=1;b.textContent='Yakin?'}}};
+    const bt=S.bts.find(x=>x.id===flt.btSel)||S.bts[0];const d=$('#bd');
+    if(!bt){d.innerHTML='';return}flt.btSel=bt.id;
+    const rows=btCompute(bt,s);const m=metrics(rows,bt.capital);const ser=equitySeries(rows.map(r=>({net:r.net,dt:r.dt})),bt.capital);
+    d.innerHTML=`<div class="card" style="margin-bottom:16px"><div class="row"><h2 style="margin:0">${esc(bt.name)}</h2><span class="note">${esc(bt.tf)} · modal $${f2(bt.capital,0)} · risiko ${bt.risk}%</span></div></div>
+    <div class="kpis"><div class="kpi hero"><div class="l">Net P&amp;L</div><div class="v ${cls(m.net)}">${rows.length?arrow(m.net)+money(m.net):'—'}</div><div class="s">ekuitas akhir $${f2(m.endEq)}</div></div>
+      <div class="kpi"><div class="l">Win rate</div><div class="v">${isNum(m.winRate)?m.winRate.toFixed(1)+'%':'—'}</div><div class="s">${m.n} posisi</div></div>
+      <div class="kpi"><div class="l">Profit factor</div><div class="v">${pf(m.pf)}</div></div>
+      <div class="kpi"><div class="l">Max DD</div><div class="v">${rows.length?m.maxDD.toFixed(1)+'%':'—'}</div></div></div>
+    <div class="card" style="margin-bottom:16px"><h3>Kurva ekuitas simulasi</h3>${equityChart('eqb',ser,bt.capital)}</div>
+    <div class="card" style="margin-bottom:16px"><h2>Tambah posisi historis</h2><form id="pf"><div class="fg">
+      <label class="f">Tanggal<input type="date" name="dt" required></label>
+      <label class="f">Pair<select name="pair">${Object.keys(INSTR).map(x=>`<option>${x}</option>`).join('')}</select></label>
+      <label class="f">Tipe<select name="type"><option>Buy</option><option>Sell</option></select></label>
+      <label class="f">Entry<input type="number" step="any" name="entry" required></label>
+      <label class="f">SL<input type="number" step="any" name="sl" required></label>
+      <label class="f">TP rencana<input type="number" step="any" name="tp"></label>
+      <label class="f">Exit aktual<input type="number" step="any" name="exit" required></label>
+      <label class="f">Setup<select name="setup">${SETUPS.map(x=>`<option>${x}</option>`).join('')}</select></label></div>
+      <div id="perr"></div><div class="row" style="margin-top:12px"><button class="primary" type="submit">Tambah posisi</button></div></form></div>
+    <div id="pl"></div>`;
+    $('#pf').onsubmit=ev=>{ev.preventDefault();const f=ev.target;const g=n=>f.elements[n].value;
+      const t={dt:g('dt'),pair:g('pair'),type:g('type'),entry:num(g('entry')),sl:num(g('sl')),tp:num(g('tp')),exit:num(g('exit')),setup:g('setup'),lot:0.01};
+      const {errs}=validateTrade(t,s);$('#perr').innerHTML=errs.length?`<div class="errs">${errs.map(esc).join('<br>')}</div>`:'';if(errs.length)return;
+      saveDoc({...bt,trades:[...bt.trades,{id:uid('p'),dt:t.dt,pair:t.pair,type:t.type,entry:t.entry,sl:t.sl,tp:t.tp,exit:t.exit,setup:t.setup}]});toast('Posisi ditambahkan')};
+    $('#pl').innerHTML=rows.length?`<div class="tbl-wrap"><table><thead><tr><th>Tanggal</th><th>Pair</th><th>Tipe</th><th class="r">Entry</th><th class="r">SL</th><th class="r">TP</th><th class="r">Exit</th><th class="r">Lot</th><th class="r">Net</th><th class="r">Ekuitas</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr>
+      <td class="num">${esc(r.dt)}</td><td class="num">${esc(r.pair)}</td><td><span class="pill ${r.type==='Buy'?'buy':'sell'}">${r.type}</span></td><td class="r num">${r.entry}</td><td class="r num">${r.sl}</td><td class="r num">${r.tp??'—'}</td><td class="r num">${r.exit}</td><td class="r num">${r.lot}</td>
+      <td class="r num ${cls(r.net)}">${arrow(r.net)}${money(r.net)}</td><td class="r num">$${f2(r.eq,0)}</td>
+      <td><button class="ghost danger" data-p="${r.id}">Hapus</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="card empty">Belum ada posisi pada sesi ini.</div>';
+    $('#pl').onclick=ev=>{const b=ev.target.closest('button');if(!b||!b.dataset.p)return;saveDoc({...bt,trades:bt.trades.filter(x=>x.id!==b.dataset.p)})}}
+};
+
+/* Calculator Module */
+VIEWS.kalkulator={
+  mount(){const s=S.settings;
+    $('#app').innerHTML=`<div class="grid g2"><div class="card"><h2>Ukuran posisi dari risiko</h2><form id="c1" class="fg" style="grid-template-columns:1fr 1fr">
+      <label class="f">Pair<select name="pair">${Object.keys(INSTR).map(x=>`<option>${x}</option>`).join('')}</select></label>
+      <label class="f">Tipe<select name="type"><option>Buy</option><option>Sell</option></select></label>
+      <label class="f">Saldo ($)<input type="number" name="bal" step="any" value="${s.balance}"></label>
+      <label class="f">Risiko (%)<input type="number" name="risk" step="0.1" value="${s.riskPct}"></label>
+      <label class="f">Entry<input type="number" name="entry" step="any" value="4180.00"></label>
+      <label class="f">Stop loss<input type="number" name="sl" step="any" value="4176.00"></label>
+      <label class="f" style="grid-column:1/-1">Take profit (opsional)<input type="number" name="tp" step="any" value="4188.00"></label></form>
+      <div class="preview" id="o1" style="flex-direction:column"></div></div>
+    <div class="card"><h2>Pip dan P&amp;L</h2><form id="c2" class="fg" style="grid-template-columns:1fr 1fr">
+      <label class="f">Pair<select name="pair">${Object.keys(INSTR).map(x=>`<option>${x}</option>`).join('')}</select></label>
+      <label class="f">Tipe<select name="type"><option>Buy</option><option>Sell</option></select></label>
+      <label class="f">Entry<input type="number" name="entry" step="any" value="4180.00"></label>
+      <label class="f">Exit<input type="number" name="exit" step="any" value="4188.50"></label>
+      <label class="f" style="grid-column:1/-1">Lot<input type="number" name="lot" step="0.01" value="0.25"></label></form>
+      <div class="preview" id="o2" style="flex-direction:column"></div></div></div>`;
+    const sync=()=>{
+      const a=Object.fromEntries(new FormData($('#c1')));const I=INSTR[a.pair];const en=num(a.entry),sl=num(a.sl),tp=num(a.tp),bal=num(a.bal),rk=num(a.risk);
+      const ok=en>0&&sl>0&&bal>0&&rk>0;const side=a.type==='Buy'?sl<en:sl>en;
+      if(!ok){$('#o1').innerHTML='<span class="mut">Lengkapi data di atas.</span>'}
+      else if(!side){$('#o1').innerHTML=`<span class="neg">${a.type==='Buy'?'SL harus di bawah entry':'SL harus di atas entry'}</span>`}
+      else{const pv=pipValue(a.pair,en,s.fx);const slp=Math.abs(en-sl)/I.pip;const lot=calcLot(bal,rk,slp,pv);const risk$=bal*rk/100;const tpp=tp>0?Math.abs(tp-en)/I.pip:null;
+        $('#o1').innerHTML=`<span>Jarak SL <b>${f2(slp,1)} pip</b></span><span>Risiko <b>$${f2(risk$)}</b></span><span>Ukuran lot <b style="font-size:20px">${lot.toFixed(2)}</b></span>`}
+      const b=Object.fromEntries(new FormData($('#c2')));const J=INSTR[b.pair];const e2=num(b.entry),x2=num(b.exit),l2=num(b.lot);
+      if(!(e2>0&&x2>0&&l2>0)){$('#o2').innerHTML='<span class="mut">Lengkapi entry, exit, dan lot.</span>'}
+      else{const pv2=pipValue(b.pair,e2,s.fx);const pips=(b.type==='Buy'?1:-1)*(x2-e2)/J.pip;const pl=pips*pv2*l2;
+        $('#o2').innerHTML=`<span>Pergerakan <b class="${cls(pips)}">${f2(pips,1)} pip</b></span><span>Hasil <b class="${cls(pl)}" style="font-size:20px">${money(pl)}</b></span>`}};
+    $('#c1').addEventListener('input',sync);$('#c2').addEventListener('input',sync);sync()}
+};
+
+/* Settings Module */
+VIEWS.pengaturan={
+  mount(){const s=S.settings;const fx=s.fx;
+    $('#app').innerHTML=`<div class="grid g2"><div class="card"><h2>Aturan trading</h2><form id="sf" class="fg" style="grid-template-columns:1fr 1fr">
+      <label class="f">Modal awal ($)<input type="number" name="balance" step="any" min="1" value="${s.balance}"></label>
+      <label class="f">Risiko per trade (%)<input type="number" name="riskPct" step="0.1" min="0.1" value="${s.riskPct}"></label>
+      <label class="f">Batas rugi harian (%)<input type="number" name="maxDailyLossPct" step="0.1" min="0.1" value="${s.maxDailyLossPct}"></label>
+      <label class="f">Zona waktu (UTC+)<input type="number" name="utc" step="1" min="-12" max="14" value="${s.utc}"></label>
+      <div style="grid-column:1/-1"><button class="primary" type="submit">Simpan pengaturan</button></div></form></div>
+    <div class="card"><h2>Status Penyimpanan</h2>
+      <p>Status: <b style="color:var(--accent)">${mode==='db'?'Firebase Cloud Firestore Connected':'Penyimpanan Lokal Browser'}</b></p>
+      <p class="note">Aplikasi ini berjalan secara PWA dan mendukung akses Offline.</p></div></div>`;
+    $('#sf').onsubmit=ev=>{ev.preventDefault();const o=Object.fromEntries(new FormData(ev.target));
+      saveDoc({id:'settings',kind:'settings',balance:+o.balance||s.balance,riskPct:+o.riskPct||s.riskPct,maxDailyLossPct:+o.maxDailyLossPct||s.maxDailyLossPct,utc:Math.round(+o.utc),fx});toast('Pengaturan tersimpan')};
+  },
+  refresh(){}
+};
+
+/* INIT FIREBASE & SYSTEM BOOT */
+window.addEventListener('firebase-ready', () => {
+  if(window.fbDb && window.fbCol) {
+    mode = 'db';
+    window.fbOnSnapshot(window.fbCol, (snapshot) => {
+      docs.clear();
+      snapshot.forEach((docSnap) => {
+        docs.set(docSnap.id, docSnap.data());
+      });
+      build();
+      updateChip();
+      (VIEWS[cur]||{}).refresh?.();
+    }, (error) => {
+      console.warn("Firestore error, falling back to local:", error);
+      mode = 'local';
+      loadLocal();
+      build();
+      updateChip();
+    });
+  } else {
+    mode = 'local';
+    loadLocal();
+    build();
+    updateChip();
+  }
+});
+
+// Service Worker Registration for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('Service Worker registered successfully! Scope:', reg.scope))
+      .catch(err => console.warn('Service Worker registration failed:', err));
+  });
+}
+
+// Initial Local Load fallback before Firebase connects
+loadLocal();
+build();
+route();
+</script>
+
+</body>
+</html>
