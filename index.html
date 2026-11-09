@@ -4,118 +4,111 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Meja Trader - Dashboard Jurnal & Backtest</title>
-  
-  <!-- PWA & Web App Meta -->
+
+  <!-- PWA Metadata -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#8a5d0c">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2991/2991231.png">
-  
+
+  <!-- Fonts & Styling -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 
   <style>
-  :root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-  html{scroll-padding-top:env(safe-area-inset-top,0px)}
-  body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}
-  img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
+    :root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+    html{scroll-padding-top:env(safe-area-inset-top,0px)}
+    body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}
+    img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
 
-  :root{
-    --bg:#eceff2; --surface:#f8f9fa; --surface-2:#eef1f4; --ink:#14181d; --ink-2:#4a535d; --muted:#6b7580;
-    --line:#d5dae0; --line-2:#e3e7eb; --accent:#8a5d0c; --accent-soft:#f1e6d0; --on-accent:#ffffff;
-    --pos:#006300; --neg:#c23232; --warn-bg:#fbefd2; --warn-ink:#6b4a05;
-    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --grid:#e1e0d9; --axis:#c3c2b7;
-    --font:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-    --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
-  }
-  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-    --bg:#0f1317; --surface:#171c21; --surface-2:#1e252b; --ink:#e8ebee; --ink-2:#b7bec6; --muted:#98a1ab;
-    --line:#2a3139; --line-2:#222a31; --accent:#d9a441; --accent-soft:#2c2412; --on-accent:#1a1304;
-    --pos:#3fbf4a; --neg:#ef6b6b; --warn-bg:#2e2512; --warn-ink:#e8c777;
-    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --grid:#2c2c2a; --axis:#383835; color-scheme:dark}}
-  :root[data-theme="dark"]{
-    --bg:#0f1317; --surface:#171c21; --surface-2:#1e252b; --ink:#e8ebee; --ink-2:#b7bec6; --muted:#98a1ab;
-    --line:#2a3139; --line-2:#222a31; --accent:#d9a441; --accent-soft:#2c2412; --on-accent:#1a1304;
-    --pos:#3fbf4a; --neg:#ef6b6b; --warn-bg:#2e2512; --warn-ink:#e8c777;
-    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --grid:#2c2c2a; --axis:#383835; color-scheme:dark}
-  *{box-sizing:border-box}
-  body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.5;
-    padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
-  .wrap{max-width:1180px;margin:0 auto}
-  header.top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;padding-block:16px 8px}
-  .brand{font-weight:700;font-size:20px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:8px}
-  .brand small{font:500 11px var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
-  .chip{font:500 11px var(--mono);padding:3px 8px;border:1px solid var(--line);border-radius:999px;color:var(--ink-2);background:var(--surface);margin-left:auto}
-  nav.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:20px;scrollbar-width:thin}
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Firebase SDK v13.2.0 Integration -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-    import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyC110pZjx1ap2SER61vKRDigtjeKoI2O4E",
-      authDomain: "trading-f3e31.firebaseapp.com",
-      projectId: "trading-f3e31",
-      storageBucket: "trading-f3e31.firebasestorage.app",
-      messagingSenderId: "624639259769",
-      appId: "1:624639259769:web:623978bf4440bb83af50a8",
-      measurementId: "G-NP6ZPGD32X"
-    };
-
-    // Initialize Firebase & Firestore
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // Global Cloud Storage Manager replacing legacy localStorage
-    window.CloudDB = {
-      db,
-      collectionName: "meja_trader_data",
-      
-      // Real-time listener for synchronization
-      initListener(onDataChange) {
-        const colRef = collection(db, this.collectionName);
-        onSnapshot(colRef, (snapshot) => {
-          const dataMap = {};
-          snapshot.forEach((docSnap) => {
-            dataMap[docSnap.id] = docSnap.data();
-          });
-          onDataChange(dataMap);
-          window.updateStorageStatusIndicator("Tersimpan di Cloud Firebase", "success");
-        }, (error) => {
-          console.error("Firestore sync error:", error);
-          window.updateStorageStatusIndicator("Gagal terhubung Cloud", "error");
-        });
-      },
-
-      // Save document to Firestore
-      async saveDoc(docId, data) {
-        try {
-          const docRef = doc(db, this.collectionName, docId);
-          await setDoc(docRef, { ...data, updatedAt: new Date().toISOString() }, { merge: true });
-          return true;
-        } catch (e) {
-          console.error("Error saving to Firestore:", e);
-          return false;
-        }
-      },
-
-      // Remove document from Firestore
-      async removeDoc(docId) {
-        try {
-          const docRef = doc(db, this.collectionName, docId);
-          await deleteDoc(docRef);
-          return true;
-        } catch (e) {
-          console.error("Error deleting from Firestore:", e);
-          return false;
-        }
-      }
-    };
-  </script>
+    :root{
+      --bg:#eceff2; --surface:#f8f9fa; --surface-2:#eef1f4; --ink:#14181d; --ink-2:#4a535d; --muted:#6b7580;
+      --line:#d5dae0; --line-2:#e3e7eb; --accent:#8a5d0c; --accent-soft:#f1e6d0; --on-accent:#ffffff;
+      --pos:#006300; --neg:#c23232; --warn-bg:#fbefd2; --warn-ink:#6b4a05;
+      --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --grid:#e1e0d9; --axis:#c3c2b7;
+      --font:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+      --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+    }
+    @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+      --bg:#0f1317; --surface:#171c21; --surface-2:#1e252b; --ink:#e8ebee; --ink-2:#b7bec6; --muted:#98a1ab;
+      --line:#2a3139; --line-2:#222a31; --accent:#d9a441; --accent-soft:#2c2412; --on-accent:#1a1304;
+      --pos:#3fbf4a; --neg:#ef6b6b; --warn-bg:#2e2512; --warn-ink:#e8c777;
+      --s1:#3987e5; --s2:#d95926; --s3:#199e70; --grid:#2c2c2a; --axis:#383835; color-scheme:dark}}
+    :root[data-theme="dark"]{
+      --bg:#0f1317; --surface:#171c21; --surface-2:#1e252b; --ink:#e8ebee; --ink-2:#b7bec6; --muted:#98a1ab;
+      --line:#2a3139; --line-2:#222a31; --accent:#d9a441; --accent-soft:#2c2412; --on-accent:#1a1304;
+      --pos:#3fbf4a; --neg:#ef6b6b; --warn-bg:#2e2512; --warn-ink:#e8c777;
+      --s1:#3987e5; --s2:#d95926; --s3:#199e70; --grid:#2c2c2a; --axis:#383835; color-scheme:dark}
+    *{box-sizing:border-box}
+    body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.5;
+      padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+    .wrap{max-width:1180px;margin:0 auto}
+    header.top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;padding-block:16px 8px}
+    .brand{font-weight:700;font-size:20px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:8px}
+    .brand small{font:500 11px var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+    .chip{font:500 11px var(--mono);padding:3px 8px;border:1px solid var(--line);border-radius:999px;color:var(--ink-2);background:var(--surface);margin-left:auto}
+    nav.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:20px;scrollbar-width:thin}
+    nav.tabs a{padding:10px 14px;color:var(--ink-2);text-decoration:none;font-weight:500;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px}
+    nav.tabs a:hover{color:var(--ink)}
+    nav.tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+    a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    h2{font-size:16px;margin:0 0 12px;font-weight:650;letter-spacing:-.005em}
+    h3{font-size:12px;margin:0 0 10px;font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+    .card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;min-width:0}
+    .grid{display:grid;gap:16px;margin-bottom:16px}
+    .g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))}
+    .kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(138px,1fr));margin-bottom:16px}
+    .kpi{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;min-width:0}
+    .kpi .l{font:500 11px var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+    .kpi .v{font:600 22px var(--mono);margin-top:4px;letter-spacing:-.02em;overflow-wrap:anywhere}
+    .kpi .s{font-size:12px;color:var(--muted);margin-top:2px}
+    .kpi.hero{grid-column:span 2}
+    .kpi.hero .v{font-size:30px}
+    .pos{color:var(--pos)} .neg{color:var(--neg)} .mut{color:var(--muted)}
+    .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+    .banner{background:var(--warn-bg);color:var(--warn-ink);border:1px solid var(--line);border-radius:6px;padding:10px 14px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+    .banner.info{background:var(--accent-soft);color:var(--ink)}
+    .banner button{margin-left:auto}
+    button,.btn{font:600 13px var(--font);border-radius:5px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 12px;cursor:pointer}
+    button:hover{background:var(--surface-2)}
+    button.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+    button.primary:hover{filter:brightness(1.08);background:var(--accent)}
+    button.ghost{border-color:transparent;background:transparent;color:var(--ink-2);padding:4px 8px}
+    button.danger{color:var(--neg)}
+    .chips{display:flex;gap:6px;flex-wrap:wrap}
+    .chips button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+    form .fg{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}
+    label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--ink-2);font-weight:500;min-width:0}
+    label.f .h{font-size:11px;color:var(--muted);font-weight:400}
+    input,select,textarea{font:400 14px var(--font);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:7px 9px;width:100%;min-width:0}
+    input[type=number],input.mono{font-family:var(--mono)}
+    textarea{min-height:64px;resize:vertical}
+    .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .sp{flex:1}
+    .tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+    table{border-collapse:collapse;width:100%;font-size:13px}
+    th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface-2)}
+    td{padding:8px 10px;border-bottom:1px solid var(--line-2);white-space:nowrap;vertical-align:middle}
+    tr:last-child td{border-bottom:0}
+    td.wrapc{white-space:normal;min-width:160px}
+    td.r,th.r{text-align:right}
+    .pill{display:inline-block;font:600 11px var(--mono);padding:2px 7px;border-radius:999px;border:1px solid var(--line)}
+    .pill.hit{color:var(--pos);border-color:var(--pos)} .pill.miss{color:var(--neg);border-color:var(--neg)} .pill.wait{color:var(--muted)}
+    .pill.buy{color:var(--s1);border-color:var(--s1)} .pill.sell{color:var(--s2);border-color:var(--s2)}
+    .preview{background:var(--surface-2);border:1px dashed var(--line);border-radius:6px;padding:10px 12px;margin-top:12px;display:flex;flex-wrap:wrap;gap:6px 22px;font-size:13px}
+    .preview b{font-family:var(--mono);font-weight:600}
+    .errs{color:var(--neg);font-size:13px;margin-top:8px}
+    .warns{color:var(--warn-ink);background:var(--warn-bg);border-radius:5px;padding:6px 10px;font-size:13px;margin-top:8px}
+    .empty{padding:28px 16px;text-align:center;color:var(--muted)}
+    .chartbox{position:relative}
+    svg.ch{width:100%;height:auto;display:block;overflow:visible}
+    svg text{font-family:var(--mono);font-size:11px;fill:var(--muted)}
+    .tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font:500 12px var(--mono);padding:6px 9px;border-radius:5px;transform:translate(-50%,-110%);white-space:nowrap;z-index:5}
+    .bar{height:8px;background:var(--line-2);border-radius:2px;min-width:80px;position:relative}
+    .bar i{position:absolute;inset:0 auto 0 0;background:var(--s1);border-radius:2px}
+    .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:6px;font-weight:500;z-index:20;max-width:90vw}
+    @media (max-width:560px){.kpi.hero{grid-column:span 1}.kpi .v{font-size:19px}.kpi.hero .v{font-size:24px}}
+  </style>
 </head>
 <body>
 
@@ -130,11 +123,11 @@
 </div>
 <div id="toast" class="toast" hidden></div>
 
-<!-- FIREBASE SDK ENGINE -->
+<!-- FIREBASE INTEGRATION MODULE -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-analytics.js";
-  import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
+  import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyC110pZjx1ap2SER61vKRDigtjeKoI2O4E",
@@ -147,27 +140,21 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
+  try { getAnalytics(app); } catch (e) {}
   const db = getFirestore(app);
 
-  // Enable offline persistence for Firestore
-  enableIndexedDbPersistence(db).catch((err) => {
-    console.warn("Offline persistence warning:", err.code);
-  });
-
   window.fbDb = db;
-  window.fbCol = collection(db, "users", "default_trader", "journals");
+  window.fbCol = collection(db, "artifacts", "trading_journal_app", "public", "data", "journals");
   window.fbDocFunc = doc;
   window.fbSetDoc = setDoc;
   window.fbDeleteDoc = deleteDoc;
   window.fbOnSnapshot = onSnapshot;
 
-  // Signal that Firebase is initialized
   window.dispatchEvent(new Event('firebase-ready'));
 </script>
 
 <script>
-/* CORE LOGIC */
+/* INSTRUMENTS CONFIG */
 const INSTR={};
 (function(){
   const add=(s,pip,contract,base,quote,dec)=>{INSTR[s]={pip,contract,base,quote,dec}};
@@ -297,11 +284,11 @@ function genSample(today,s){
         spread:pair==='XAUUSD'?2.5:0.8,commission:+(lot*7).toFixed(2),swap:0,setup:pick(setups),tag,discipline:win?4+Math.floor(rnd()*2):1+Math.floor(rnd()*3),notes:''})}}
   return{maps,trades}}
 
-/* APP STORAGE & FIREBASE ENGINE */
+/* APP STORAGE & FIREBASE LOGIC */
 const docs=new Map();let mode='local',sampleDismissed=false;
 const LS='meja-trader-v1';
 
-function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2600)}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2600)}
 function persistLocal(){try{localStorage.setItem(LS,JSON.stringify({docs:[...docs.values()],sampleDismissed}))}catch(e){}}
 function loadLocal(){try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(j){docs.clear();j.docs.forEach(d=>docs.set(d.id,d));sampleDismissed=!!j.sampleDismissed}}catch(e){}}
 
@@ -309,7 +296,7 @@ async function saveDoc(d){
   docs.set(d.id,d);
   if(mode==='db' && window.fbSetDoc){
     try{
-      await window.fbSetDoc(window.fbDocFunc(window.fbDb, "users", "default_trader", "journals", d.id), d);
+      await window.fbSetDoc(window.fbDocFunc(window.fbDb, "artifacts", "trading_journal_app", "public", "data", "journals", d.id), d);
     }catch(e){
       console.error("Firebase sync error:", e);
     }
@@ -323,7 +310,7 @@ async function removeDoc(id){
   docs.delete(id);
   if(mode==='db' && window.fbDeleteDoc){
     try{
-      await window.fbDeleteDoc(window.fbDocFunc(window.fbDb, "users", "default_trader", "journals", id));
+      await window.fbDeleteDoc(window.fbDocFunc(window.fbDb, "artifacts", "trading_journal_app", "public", "data", "journals", id));
     }catch(e){
       console.error("Firebase delete error:", e);
     }
@@ -345,7 +332,7 @@ function build(){
   maps=[...maps].sort((a,b)=>b.date.localeCompare(a.date));trades=[...trades].sort((a,b)=>a.dt.localeCompare(b.dt));
   S={settings,maps,trades,bts:real.bts,revs:real.revs,sample}}
 
-function updateChip(){$('#storeChip').textContent=S&&S.sample?'data contoh':mode==='db'?'Firebase Cloud':'Tersimpan di Browser'}
+function updateChip(){const c=document.getElementById('storeChip');if(c)c.textContent=S&&S.sample?'data contoh':mode==='db'?'Firebase Cloud':'Tersimpan di Browser'}
 function onData(){build();updateChip();renderBanner();(VIEWS[cur]||{}).refresh?.()}
 
 /* DERIVED UTILS */
@@ -353,7 +340,7 @@ function closedTrades(list,s){return list.map(t=>({t,c:calcTrade(t,s)})).filter(
 function inPeriod(dateStr,p){if(p==='all')return true;const from=addDays(todayStr(),-(p==='7'?7:30));return dateStr.slice(0,10)>=from}
 function ymd(x){return(x.dt||x.date||'').slice(0,10)}
 
-/* CHARTS */
+/* CHARTS RENDER */
 function niceRange(min,max){if(min===max){min-=1;max+=1}const span=max-min;const raw=span/4;const p=Math.pow(10,Math.floor(Math.log10(raw)));
   const step=[1,2,2.5,5,10].map(m=>m*p).find(x=>x>=raw);const lo=Math.floor(min/step)*step,hi=Math.ceil(max/step)*step;const ticks=[];for(let v=lo;v<=hi+1e-9;v+=step)ticks.push(+v.toFixed(8));return{lo,hi,ticks}}
 const CH={};
@@ -364,7 +351,7 @@ function equityChart(id,series,startBal){
   const pts=series.map((p,i)=>X(i).toFixed(1)+','+Y(p.eq).toFixed(1));const last=series[series.length-1];
   const grid=nr.ticks.map(v=>`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)" stroke-width="1"/><text x="${L-8}" y="${Y(v)+4}" text-anchor="end">${Math.round(v).toLocaleString('en-US')}</text>`).join('');
   const d0=series[1].dt?series[1].dt.slice(5,10):'',d1=last.dt?last.dt.slice(5,10):'';
-  return`<div class="chartbox"><svg class="ch eq" data-id="${id}" viewBox="0 0 ${W} ${H}" role="img">
+  return`<div class="chartbox"><svg class="ch eq" data-id="${id}" viewBox="0 0 ${W} ${H}">
     ${grid}<line x1="${L}" x2="${W-R}" y1="${Y(startBal)}" y2="${Y(startBal)}" stroke="var(--axis)" stroke-dasharray="3 4"/>
     <polygon points="${L},${Y(nr.lo)} ${pts.join(' ')} ${X(series.length-1)},${Y(nr.lo)}" fill="var(--s1)" fill-opacity=".10"/>
     <polyline points="${pts.join(' ')}" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
@@ -684,14 +671,14 @@ VIEWS.pengaturan={
       <div style="grid-column:1/-1"><button class="primary" type="submit">Simpan pengaturan</button></div></form></div>
     <div class="card"><h2>Status Penyimpanan</h2>
       <p>Status: <b style="color:var(--accent)">${mode==='db'?'Firebase Cloud Firestore Connected':'Penyimpanan Lokal Browser'}</b></p>
-      <p class="note">Aplikasi ini berjalan secara PWA dan mendukung akses Offline.</p></div></div>`;
+      <p class="note">Aplikasi ini berjalan secara PWA dan terhubung ke cloud database secara otomatis.</p></div></div>`;
     $('#sf').onsubmit=ev=>{ev.preventDefault();const o=Object.fromEntries(new FormData(ev.target));
       saveDoc({id:'settings',kind:'settings',balance:+o.balance||s.balance,riskPct:+o.riskPct||s.riskPct,maxDailyLossPct:+o.maxDailyLossPct||s.maxDailyLossPct,utc:Math.round(+o.utc),fx});toast('Pengaturan tersimpan')};
   },
   refresh(){}
 };
 
-/* INIT FIREBASE & SYSTEM BOOT */
+/* SYSTEM BOOT & LISTENERS */
 window.addEventListener('firebase-ready', () => {
   if(window.fbDb && window.fbCol) {
     mode = 'db';
@@ -704,7 +691,7 @@ window.addEventListener('firebase-ready', () => {
       updateChip();
       (VIEWS[cur]||{}).refresh?.();
     }, (error) => {
-      console.warn("Firestore error, falling back to local:", error);
+      console.warn("Firestore listener error, using local storage:", error);
       mode = 'local';
       loadLocal();
       build();
@@ -718,16 +705,14 @@ window.addEventListener('firebase-ready', () => {
   }
 });
 
-// Service Worker Registration for PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('Service Worker registered successfully! Scope:', reg.scope))
-      .catch(err => console.warn('Service Worker registration failed:', err));
+      .then(reg => console.log('PWA Service Worker registered:', reg.scope))
+      .catch(err => console.warn('PWA Service Worker failed:', err));
   });
 }
 
-// Initial Local Load fallback before Firebase connects
 loadLocal();
 build();
 route();
