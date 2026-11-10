@@ -139,22 +139,28 @@
     measurementId: "G-NP6ZPGD32X"
   };
 
-  const app = initializeApp(firebaseConfig);
-  try { getAnalytics(app); } catch (e) {}
-  const db = getFirestore(app);
+  try {
+    const app = initializeApp(firebaseConfig);
+    try { getAnalytics(app); } catch (e) {}
+    const db = getFirestore(app);
 
-  window.fbDb = db;
-  window.fbCol = collection(db, "artifacts", "trading_journal_app", "public", "data", "journals");
-  window.fbDocFunc = doc;
-  window.fbSetDoc = setDoc;
-  window.fbDeleteDoc = deleteDoc;
-  window.fbOnSnapshot = onSnapshot;
+    window.fbDb = db;
+    // Koleksi langsung untuk app trading-f3e31
+    window.fbCol = collection(db, "trading_journals");
+    window.fbDocFunc = doc;
+    window.fbSetDoc = setDoc;
+    window.fbDeleteDoc = deleteDoc;
+    window.fbOnSnapshot = onSnapshot;
 
-  window.dispatchEvent(new Event('firebase-ready'));
+    window.dispatchEvent(new Event('firebase-ready'));
+  } catch(err) {
+    console.error("Firebase init error:", err);
+    window.dispatchEvent(new Event('firebase-error'));
+  }
 </script>
 
 <script>
-/* INSTRUMENTS CONFIG */
+/* INSTRUMENTS CONFIG & GLOBAL DEFAULTS */
 const INSTR={};
 (function(){
   const add=(s,pip,contract,base,quote,dec)=>{INSTR[s]={pip,contract,base,quote,dec}};
@@ -177,10 +183,30 @@ const isNum=v=>typeof v==='number'&&isFinite(v);
 const num=v=>{if(v===''||v==null)return null;const n=Number(v);return isFinite(n)?n:null};
 
 function pipValue(sym,price,fx){
-  const I=INSTR[sym];const q=I.contract*I.pip;
+  const I=INSTR[sym];if(!I)return 1;
+  const q=I.contract*I.pip;
   if(I.quote==='USD')return q;
   if(I.base==='USD')return q/price;
   return q*((fx&&fx[I.quote])||1);
+}
+
+function updateChip(){
+  const c=document.getElementById('storeChip');
+  if(c) {
+    if(S && S.sample) {
+      c.textContent='data contoh';
+      c.style.borderColor='var(--line)';
+      c.style.color='var(--ink-2)';
+    } else if(mode==='db') {
+      c.textContent='Tersimpan di Cloud Firebase';
+      c.style.borderColor='var(--pos)';
+      c.style.color='var(--pos)';
+    } else {
+      c.textContent='Tersimpan di Browser';
+      c.style.borderColor='var(--warn-ink)';
+      c.style.color='var(--warn-ink)';
+    }
+  }
 }
 
 function calcLot(balance,riskPct,slPips,pv){
@@ -681,8 +707,8 @@ VIEWS.pengaturan={
 /* SYSTEM BOOT & LISTENERS */
 window.addEventListener('firebase-ready', () => {
   if(window.fbDb && window.fbCol) {
-    mode = 'db';
     window.fbOnSnapshot(window.fbCol, (snapshot) => {
+      mode = 'db';
       docs.clear();
       snapshot.forEach((docSnap) => {
         docs.set(docSnap.id, docSnap.data());
@@ -691,11 +717,12 @@ window.addEventListener('firebase-ready', () => {
       updateChip();
       (VIEWS[cur]||{}).refresh?.();
     }, (error) => {
-      console.warn("Firestore listener error, using local storage:", error);
+      console.warn("Firestore access error/permission denied, fallback to local storage:", error);
       mode = 'local';
       loadLocal();
       build();
       updateChip();
+      (VIEWS[cur]||{}).refresh?.();
     });
   } else {
     mode = 'local';
@@ -703,6 +730,13 @@ window.addEventListener('firebase-ready', () => {
     build();
     updateChip();
   }
+});
+
+window.addEventListener('firebase-error', () => {
+  mode = 'local';
+  loadLocal();
+  build();
+  updateChip();
 });
 
 if ('serviceWorker' in navigator) {
