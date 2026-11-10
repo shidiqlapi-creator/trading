@@ -145,8 +145,8 @@
     const db = getFirestore(app);
 
     window.fbDb = db;
-    // Koleksi langsung untuk app trading-f3e31
-    window.fbCol = collection(db, "trading_journals");
+    // Koleksi Firestore utama untuk user
+    window.fbCol = collection(db, "journals");
     window.fbDocFunc = doc;
     window.fbSetDoc = setDoc;
     window.fbDeleteDoc = deleteDoc;
@@ -322,9 +322,10 @@ async function saveDoc(d){
   docs.set(d.id,d);
   if(mode==='db' && window.fbSetDoc){
     try{
-      await window.fbSetDoc(window.fbDocFunc(window.fbDb, "artifacts", "trading_journal_app", "public", "data", "journals", d.id), d);
+      await window.fbSetDoc(window.fbDocFunc(window.fbDb, "journals", d.id), d);
     }catch(e){
       console.error("Firebase sync error:", e);
+      toast('Terjadi kesalahan sinkronisasi cloud');
     }
   } else {
     persistLocal();
@@ -336,7 +337,7 @@ async function removeDoc(id){
   docs.delete(id);
   if(mode==='db' && window.fbDeleteDoc){
     try{
-      await window.fbDeleteDoc(window.fbDocFunc(window.fbDb, "artifacts", "trading_journal_app", "public", "data", "journals", id));
+      await window.fbDeleteDoc(window.fbDocFunc(window.fbDb, "journals", id));
     }catch(e){
       console.error("Firebase delete error:", e);
     }
