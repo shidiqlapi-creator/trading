@@ -58,6 +58,7 @@
     .card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;min-width:0}
     .grid{display:grid;gap:16px;margin-bottom:16px}
     .g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))}
+    #pl .tbl-wrap{max-height:65vh;overflow:auto}#pl thead th{position:sticky;top:0;background:var(--surface);z-index:1}
     .kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(138px,1fr));margin-bottom:16px}
     .kpi{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;min-width:0}
     .kpi .l{font:500 11px var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
@@ -409,7 +410,7 @@ const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMo
 const nowLocal=()=>todayStr()+'T'+new Date().toTimeString().slice(0,5);
 const uid=p=>p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 
-const VIEWS={};let cur='ringkasan';const flt={period:'all',reviewWeek:null,editMap:null,editTrade:null,btSel:null,editBt:null,editPos:null,mapFilter:'all'};
+const VIEWS={};let cur='ringkasan';const flt={period:'all',reviewWeek:null,editMap:null,editTrade:null,btSel:null,editBt:null,editPos:null,mapFilter:'all',bf:{from:'',to:'',type:'',res:'',setup:'',pair:'',sort:'new',lim:50}};
 function renderTabs(){$('#tabs').innerHTML=MODULES.map(([k,l])=>`<a href="#${k}" ${k===cur?'aria-current="page"':''}>${l}</a>`).join('')}
 function renderBanner(){const b=$('#banner');
   b.innerHTML=S&&S.sample?`<div class="banner info"><span>Anda melihat <b>data contoh</b> (XAUUSD dan beberapa pair). Simpan catatan pertama Anda untuk menggantinya.</span><button id="dismissSample">Mulai dari kosong</button></div>`:''}
@@ -605,13 +606,21 @@ VIEWS.backtest={
       if(b.dataset.d){if(b.dataset.armed){removeDoc(b.dataset.d);if(flt.btSel===b.dataset.d)flt.btSel=null;toast('Sesi dihapus')}else{b.dataset.armed=1;b.textContent='Yakin?'}}};
     const bt=S.bts.find(x=>x.id===flt.btSel)||S.bts[0];const d=$('#bd');
     if(!bt){d.innerHTML='';return}flt.btSel=bt.id;
-    const rows=btCompute(bt,s);const m=metrics(rows,bt.capital);const ser=equitySeries(rows.map(r=>({net:r.net,dt:r.dt})),bt.capital);
-    d.innerHTML=`<div class="card" style="margin-bottom:16px"><div class="row"><h2 style="margin:0">${esc(bt.name)}</h2><span class="note">${esc(bt.tf)} · modal $${f2(bt.capital,0)} · risiko ${bt.risk}%</span></div></div>
-    <div class="kpis"><div class="kpi hero"><div class="l">Net P&amp;L</div><div class="v ${cls(m.net)}">${rows.length?arrow(m.net)+money(m.net):'—'}</div><div class="s">ekuitas akhir $${f2(m.endEq)}</div></div>
-      <div class="kpi"><div class="l">Win rate</div><div class="v">${isNum(m.winRate)?m.winRate.toFixed(1)+'%':'—'}</div><div class="s">${m.n} posisi</div></div>
-      <div class="kpi"><div class="l">Profit factor</div><div class="v">${pf(m.pf)}</div></div>
-      <div class="kpi"><div class="l">Avg R</div><div class="v ${cls(m.avgR)}">${isNum(m.avgR)?f2(m.avgR)+'R':'—'}</div></div><div class="kpi"><div class="l">Max DD</div><div class="v">${rows.length?m.maxDD.toFixed(1)+'%':'—'}</div></div></div>
-    <div class="card" style="margin-bottom:16px"><h3>Kurva ekuitas simulasi</h3>${equityChart('eqb',ser,bt.capital)}</div>
+    const rows=btCompute(bt,s);const F=flt.bf;
+    const setups=[...new Set(rows.map(r=>r.setup).filter(Boolean))],pairs=[...new Set(rows.map(r=>r.pair))];
+    const opt=(arr,v)=>'<option value="">Semua</option>'+arr.map(x=>`<option ${x===v?'selected':''}>${esc(x)}</option>`).join('');
+    d.innerHTML=`<div class="card" style="margin-bottom:16px"><div class="row"><h2 style="margin:0">${esc(bt.name)}</h2><span class="note">${esc(bt.tf)} · modal $${f2(bt.capital,0)} · risiko ${bt.risk}% · spread ${bt.cost||0} pip</span></div></div>
+    <div class="card" style="margin-bottom:16px"><div class="row" style="justify-content:space-between"><h3 style="margin:0">Filter posisi</h3><span class="note" id="fcount"></span></div>
+      <form id="ff" class="fg" style="margin-top:10px" onsubmit="return false">
+        <label class="f">Dari<input type="date" name="from" value="${esc(F.from)}"></label>
+        <label class="f">Sampai<input type="date" name="to" value="${esc(F.to)}"></label>
+        <label class="f">Tipe<select name="type">${opt(['Buy','Sell'],F.type)}</select></label>
+        <label class="f">Hasil<select name="res"><option value="">Semua</option><option value="win" ${F.res==='win'?'selected':''}>Menang</option><option value="loss" ${F.res==='loss'?'selected':''}>Kalah / BE</option></select></label>
+        <label class="f">Setup<select name="setup">${opt(setups,F.setup)}</select></label>
+        <label class="f">Pair<select name="pair">${opt(pairs,F.pair)}</select></label>
+        <label class="f">Urutan<select name="sort"><option value="new" ${F.sort==='new'?'selected':''}>Terbaru dulu</option><option value="old" ${F.sort==='old'?'selected':''}>Terlama dulu</option></select></label></form>
+      <div class="row" style="margin-top:10px"><button type="button" class="ghost" data-pre="7">7 hari</button><button type="button" class="ghost" data-pre="30">30 hari</button><button type="button" class="ghost" data-pre="m">Bulan ini</button><button type="button" class="ghost" data-pre="">Reset filter</button></div></div>
+    <div id="res"></div>
     <div class="card" style="margin-bottom:16px"><h2>Tambah posisi historis</h2><form id="pf"><div class="fg">
       <label class="f">Tanggal<input type="date" name="dt" required></label>
       <label class="f">Pair<select name="pair">${Object.keys(INSTR).map(x=>`<option>${x}</option>`).join('')}</select></label>
@@ -630,11 +639,29 @@ VIEWS.backtest={
       saveDoc({...cb,trades:eid?cb.trades.map(x=>x.id===eid?np:x):[...cb.trades,np]});toast(eid?'Posisi diperbarui':'Posisi ditambahkan')};
     const ep=bt.trades.find(x=>x.id===flt.editPos);if(ep){const pm=$('#pf');['dt','pair','type','entry','sl','tp','exit','setup'].forEach(k=>pm.elements[k].value=ep[k]??'');pm.closest('.card').querySelector('h2').textContent='Ubah posisi';const pb=pm.querySelector('button.primary');pb.textContent='Simpan perubahan';
       const c=document.createElement('button');c.type='button';c.textContent='Batal';c.onclick=()=>{flt.editPos=null;this.refresh()};pb.after(c)}
-    $('#pl').innerHTML=rows.length?`<div class="tbl-wrap"><table><thead><tr><th>Tanggal</th><th>Pair</th><th>Tipe</th><th class="r">Entry</th><th class="r">SL</th><th class="r">TP</th><th class="r">Exit</th><th class="r">Lot</th><th class="r">Net</th><th class="r">Ekuitas</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr>
-      <td class="num">${esc(r.dt)}</td><td class="num">${esc(r.pair)}</td><td><span class="pill ${r.type==='Buy'?'buy':'sell'}">${r.type}</span></td><td class="r num">${r.entry}</td><td class="r num">${r.sl}</td><td class="r num">${r.tp??'—'}</td><td class="r num">${r.exit}</td><td class="r num">${r.lot}</td>
-      <td class="r num ${cls(r.net)}">${arrow(r.net)}${money(r.net)}</td><td class="r num">$${f2(r.eq,0)}</td>
-      <td><button class="ghost" data-pe="${r.id}">Ubah</button><button class="ghost danger" data-p="${r.id}">Hapus</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="card empty">Belum ada posisi pada sesi ini.</div>';
+    const ff=$('#ff'),ds=x=>new Date(x.getTime()-x.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+    const paint=()=>{
+      const fr=rows.filter(r=>(!F.from||r.dt>=F.from)&&(!F.to||r.dt<=F.to)&&(!F.type||r.type===F.type)&&(!F.setup||r.setup===F.setup)&&(!F.pair||r.pair===F.pair)&&(!F.res||(F.res==='win'?r.net>0:r.net<=0)));
+      const m=metrics(fr,bt.capital),ser=equitySeries(fr.map(r=>({net:r.net,dt:r.dt})),bt.capital);
+      $('#fcount').textContent='Menampilkan '+fr.length+' dari '+rows.length+' posisi';
+      $('#res').innerHTML=`<div class="kpis"><div class="kpi hero"><div class="l">Net P&amp;L</div><div class="v ${cls(m.net)}">${fr.length?arrow(m.net)+money(m.net):'—'}</div><div class="s">${fr.length===rows.length?'ekuitas akhir $'+f2(m.endEq):fr.length+' posisi (terfilter)'}</div></div>
+        <div class="kpi"><div class="l">Win rate</div><div class="v">${isNum(m.winRate)?m.winRate.toFixed(1)+'%':'—'}</div><div class="s">${m.wins}W / ${m.losses}L</div></div>
+        <div class="kpi"><div class="l">Profit factor</div><div class="v">${pf(m.pf)}</div></div>
+        <div class="kpi"><div class="l">Avg R</div><div class="v ${cls(m.avgR)}">${isNum(m.avgR)?f2(m.avgR)+'R':'—'}</div></div>
+        <div class="kpi"><div class="l">Max DD</div><div class="v">${fr.length?m.maxDD.toFixed(1)+'%':'—'}</div></div></div>
+        <div class="card" style="margin-bottom:16px"><h3>Kurva ekuitas simulasi</h3>${equityChart('eqb',ser,bt.capital)}</div>`;
+      const list=F.sort==='old'?fr:[...fr].reverse(),shown=list.slice(0,F.lim);
+      $('#pl').innerHTML=shown.length?`<div class="tbl-wrap"><table><thead><tr><th>Tanggal</th><th>Pair</th><th>Tipe</th><th>Setup</th><th class="r">Entry</th><th class="r">SL</th><th class="r">TP</th><th class="r">Exit</th><th class="r">Lot</th><th class="r">Net</th><th class="r">R</th><th class="r">Ekuitas</th><th></th></tr></thead><tbody>${shown.map(r=>`<tr>
+        <td class="num">${esc(r.dt)}</td><td class="num">${esc(r.pair)}</td><td><span class="pill ${r.type==='Buy'?'buy':'sell'}">${r.type}</span></td><td>${esc(r.setup||'—')}</td><td class="r num">${r.entry}</td><td class="r num">${r.sl}</td><td class="r num">${r.tp??'—'}</td><td class="r num">${r.exit}</td><td class="r num">${r.lot}</td>
+        <td class="r num ${cls(r.net)}">${arrow(r.net)}${money(r.net)}</td><td class="r num ${cls(r.r)}">${isNum(r.r)?f2(r.r)+'R':'—'}</td><td class="r num">$${f2(r.eq,0)}</td>
+        <td><button class="ghost" data-pe="${r.id}">Ubah</button><button class="ghost danger" data-p="${r.id}">Hapus</button></td></tr>`).join('')}</tbody></table></div>${list.length>shown.length?`<div class="row" style="margin-top:10px"><button class="ghost" id="more">Tampilkan lebih banyak (${list.length-shown.length} lagi)</button></div>`:''}`
+        :`<div class="card empty">${rows.length?'Tidak ada posisi yang cocok dengan filter.':'Belum ada posisi pada sesi ini.'}</div>`;
+    };
+    ff.onchange=()=>{['from','to','type','res','setup','pair','sort'].forEach(k=>F[k]=ff.elements[k].value);F.lim=50;paint()};
+    d.querySelectorAll('[data-pre]').forEach(b=>b.onclick=()=>{const q=b.dataset.pre;ff.elements.from.value=q==='m'?todayStr().slice(0,8)+'01':q?ds(new Date(Date.now()-q*864e5)):'';ff.elements.to.value='';if(!q)['type','res','setup','pair'].forEach(k=>ff.elements[k].value='');ff.onchange()});
+    paint();
     $('#pl').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;
+    if(b.id==='more'){F.lim+=50;paint();return}
     if(b.dataset.pe){flt.editPos=b.dataset.pe;this.refresh();window.scrollTo(0,0);return}
     if(b.dataset.p){if(!confirm('Hapus posisi ini?'))return;const cb=S.bts.find(x=>x.id===bt.id)||bt;saveDoc({...cb,trades:cb.trades.filter(x=>x.id!==b.dataset.p)})}}}
 };

@@ -1,5 +1,5 @@
 // Service worker Meja Trader. Naikkan VERSION setiap kali index.html diubah.
-const VERSION='meja-trader-v1';
+const VERSION='meja-trader-v2';
 const CORE=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./apple-touch-icon.png','./favicon.png'];
 const CDN=['fonts.googleapis.com','fonts.gstatic.com','www.gstatic.com'];
 
