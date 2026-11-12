@@ -10,7 +10,8 @@
   <meta name="theme-color" content="#8a5d0c">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2991/2991231.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="favicon.png">
 
   <!-- Fonts & Styling -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
@@ -109,55 +110,23 @@
     .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:6px;font-weight:500;z-index:20;max-width:90vw}
     @media (max-width:560px){.kpi.hero{grid-column:span 1}.kpi .v{font-size:19px}.kpi.hero .v{font-size:24px}}
   </style>
+
+  <!-- FIREBASE COMPAT SDK FOR GUARANTEED LOAD -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
 <div class="wrap">
   <header class="top">
     <div class="brand">Meja Trader <small>XAUUSD · Forex</small></div>
-    <span class="chip" id="storeChip">memuat…</span>
+    <span class="chip" id="storeChip">menghubungkan…</span>
   </header>
   <nav class="tabs" id="tabs" aria-label="Modul"></nav>
   <div id="banner"></div>
   <main id="app"></main>
 </div>
 <div id="toast" class="toast" hidden></div>
-
-<!-- FIREBASE INTEGRATION MODULE -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-analytics.js";
-  import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyC110pZjx1ap2SER61vKRDigtjeKoI2O4E",
-    authDomain: "trading-f3e31.firebaseapp.com",
-    projectId: "trading-f3e31",
-    storageBucket: "trading-f3e31.firebasestorage.app",
-    messagingSenderId: "624639259769",
-    appId: "1:624639259769:web:623978bf4440bb83af50a8",
-    measurementId: "G-NP6ZPGD32X"
-  };
-
-  try {
-    const app = initializeApp(firebaseConfig);
-    try { getAnalytics(app); } catch (e) {}
-    const db = getFirestore(app);
-
-    window.fbDb = db;
-    // Koleksi Firestore utama untuk user
-    window.fbCol = collection(db, "journals");
-    window.fbDocFunc = doc;
-    window.fbSetDoc = setDoc;
-    window.fbDeleteDoc = deleteDoc;
-    window.fbOnSnapshot = onSnapshot;
-
-    window.dispatchEvent(new Event('firebase-ready'));
-  } catch(err) {
-    console.error("Firebase init error:", err);
-    window.dispatchEvent(new Event('firebase-error'));
-  }
-</script>
 
 <script>
 /* INSTRUMENTS CONFIG & GLOBAL DEFAULTS */
@@ -190,25 +159,85 @@ function pipValue(sym,price,fx){
   return q*((fx&&fx[I.quote])||1);
 }
 
-function updateChip(){
-  const c=document.getElementById('storeChip');
-  if(c) {
-    if(S && S.sample) {
-      c.textContent='data contoh';
-      c.style.borderColor='var(--line)';
-      c.style.color='var(--ink-2)';
-    } else if(mode==='db') {
-      c.textContent='Tersimpan di Cloud Firebase';
-      c.style.borderColor='var(--pos)';
-      c.style.color='var(--pos)';
-    } else {
-      c.textContent='Tersimpan di Browser';
-      c.style.borderColor='var(--warn-ink)';
-      c.style.color='var(--warn-ink)';
-    }
+/* FIREBASE CONFIG & INITIALIZATION */
+const firebaseConfig = {
+  apiKey: "AIzaSyC110pZjx1ap2SER61vKRDigtjeKoI2O4E",
+  authDomain: "trading-f3e31.firebaseapp.com",
+  projectId: "trading-f3e31",
+  storageBucket: "trading-f3e31.firebasestorage.app",
+  messagingSenderId: "624639259769",
+  appId: "1:624639259769:web:623978bf4440bb83af50a8"
+};
+
+let db = null;
+let journalsCol = null;
+
+try {
+  if (typeof firebase !== 'undefined') {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    journalsCol = db.collection('journals');
+  }
+} catch (e) {
+  console.warn("Firebase Init Exception:", e);
+}
+
+/* APP STORAGE & LOGIC */
+const docs=new Map();let mode='local',sampleDismissed=false;
+const LS='meja-trader-v1';
+
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2600)}
+function persistLocal(){try{localStorage.setItem(LS,JSON.stringify({docs:[...docs.values()],sampleDismissed}))}catch(e){}}
+function loadLocal(){try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(j){docs.clear();j.docs.forEach(d=>docs.set(d.id,d));sampleDismissed=!!j.sampleDismissed}}catch(e){}}
+
+async function saveDoc(d){
+  docs.set(d.id,d);persistLocal();onData();
+  if(mode==='db'&&journalsCol){
+    try{await journalsCol.doc(d.id).set(d)}
+    catch(e){console.error('Firebase save error:',e);toast('GAGAL simpan ke Cloud. Periksa Rules Firestore; perubahan bisa hilang saat refresh.')}
+  }
+}
+async function removeDoc(id){
+  docs.delete(id);persistLocal();onData();
+  if(mode==='db'&&journalsCol){
+    try{await journalsCol.doc(id).delete()}
+    catch(e){console.error('Firebase delete error:',e);toast('GAGAL hapus di Cloud. Periksa Rules Firestore.')}
   }
 }
 
+function isBlank(){return[...docs.values()].filter(d=>d.kind!=='settings'&&d.kind!=='flag').length===0}
+let S=null;
+function build(){
+  const all=[...docs.values()];const st=all.find(d=>d.id==='settings')||{};
+  const settings={...DEFAULT_SETTINGS,...st,fx:{...DEFAULT_SETTINGS.fx,...(st.fx||{})}};
+  const real={maps:all.filter(d=>d.kind==='map'),trades:all.filter(d=>d.kind==='trade'),bts:all.filter(d=>d.kind==='bt'),revs:all.filter(d=>d.kind==='rev')};
+  const flag=all.find(d=>d.id==='flag');if(flag&&flag.sampleDismissed)sampleDismissed=true;
+  const sample=isBlank()&&!sampleDismissed;let maps=real.maps,trades=real.trades;
+  if(sample){const g=genSample(todayStr(),settings);maps=g.maps;trades=g.trades}
+  maps=[...maps].sort((a,b)=>b.date.localeCompare(a.date));trades=[...trades].sort((a,b)=>a.dt.localeCompare(b.dt));
+  S={settings,maps,trades,bts:real.bts,revs:real.revs,sample}}
+
+function updateChip(){
+  const c=document.getElementById('storeChip');
+  if(!c) return;
+  if(S&&S.sample){
+    c.textContent='data contoh';
+    c.style.borderColor='var(--line)';
+    c.style.color='var(--ink-2)';
+  }else if(mode==='db'){
+    c.textContent='Tersimpan di Cloud Firebase';
+    c.style.borderColor='var(--pos)';
+    c.style.color='var(--pos)';
+  }else{
+    c.textContent='Tersimpan di Browser';
+    c.style.borderColor='var(--warn-ink)';
+    c.style.color='var(--warn-ink)';
+  }
+}
+
+function onData(){build();updateChip();renderBanner();(VIEWS[cur]||{}).refresh?.()}
+
+/* TRADING CALCULATIONS & HELPERS */
 function calcLot(balance,riskPct,slPips,pv){
   if(!(slPips>0&&pv>0))return 0;
   return Math.floor((balance*riskPct/100)/(slPips*pv)*100+1e-9)/100;
@@ -275,7 +304,7 @@ function btCompute(bt,s){
     const pv=pipValue(t.pair,t.entry,s.fx);const slPips=Math.abs(t.entry-t.sl)/I.pip;
     const lot=Math.max(0.01,calcLot(eq,bt.risk,slPips,pv));
     const c=calcTrade({...t,lot,commission:0,swap:0},s);if(!c)return;
-    const net=c.net;eq+=(net||0);rows.push({...t,lot,c,net,r:c.r,eq})});
+    const net=(c.net||0)-(bt.cost||0)*pv*lot;eq+=net;rows.push({...t,lot,c,net,r:c.risk>0?net/c.risk:null,eq})});
   return rows}
 
 function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -310,59 +339,6 @@ function genSample(today,s){
         spread:pair==='XAUUSD'?2.5:0.8,commission:+(lot*7).toFixed(2),swap:0,setup:pick(setups),tag,discipline:win?4+Math.floor(rnd()*2):1+Math.floor(rnd()*3),notes:''})}}
   return{maps,trades}}
 
-/* APP STORAGE & FIREBASE LOGIC */
-const docs=new Map();let mode='local',sampleDismissed=false;
-const LS='meja-trader-v1';
-
-function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2600)}
-function persistLocal(){try{localStorage.setItem(LS,JSON.stringify({docs:[...docs.values()],sampleDismissed}))}catch(e){}}
-function loadLocal(){try{const j=JSON.parse(localStorage.getItem(LS)||'null');if(j){docs.clear();j.docs.forEach(d=>docs.set(d.id,d));sampleDismissed=!!j.sampleDismissed}}catch(e){}}
-
-async function saveDoc(d){
-  docs.set(d.id,d);
-  if(mode==='db' && window.fbSetDoc){
-    try{
-      await window.fbSetDoc(window.fbDocFunc(window.fbDb, "journals", d.id), d);
-    }catch(e){
-      console.error("Firebase sync error:", e);
-      toast('Terjadi kesalahan sinkronisasi cloud');
-    }
-  } else {
-    persistLocal();
-  }
-  onData();
-}
-
-async function removeDoc(id){
-  docs.delete(id);
-  if(mode==='db' && window.fbDeleteDoc){
-    try{
-      await window.fbDeleteDoc(window.fbDocFunc(window.fbDb, "journals", id));
-    }catch(e){
-      console.error("Firebase delete error:", e);
-    }
-  } else {
-    persistLocal();
-  }
-  onData();
-}
-
-function isBlank(){return[...docs.values()].filter(d=>d.kind!=='settings'&&d.kind!=='flag').length===0}
-let S=null;
-function build(){
-  const all=[...docs.values()];const st=all.find(d=>d.id==='settings')||{};
-  const settings={...DEFAULT_SETTINGS,...st,fx:{...DEFAULT_SETTINGS.fx,...(st.fx||{})}};
-  const real={maps:all.filter(d=>d.kind==='map'),trades:all.filter(d=>d.kind==='trade'),bts:all.filter(d=>d.kind==='bt'),revs:all.filter(d=>d.kind==='rev')};
-  const flag=all.find(d=>d.id==='flag');if(flag&&flag.sampleDismissed)sampleDismissed=true;
-  const sample=isBlank()&&!sampleDismissed;let maps=real.maps,trades=real.trades;
-  if(sample){const g=genSample(todayStr(),settings);maps=g.maps;trades=g.trades}
-  maps=[...maps].sort((a,b)=>b.date.localeCompare(a.date));trades=[...trades].sort((a,b)=>a.dt.localeCompare(b.dt));
-  S={settings,maps,trades,bts:real.bts,revs:real.revs,sample}}
-
-function updateChip(){const c=document.getElementById('storeChip');if(c)c.textContent=S&&S.sample?'data contoh':mode==='db'?'Firebase Cloud':'Tersimpan di Browser'}
-function onData(){build();updateChip();renderBanner();(VIEWS[cur]||{}).refresh?.()}
-
-/* DERIVED UTILS */
 function closedTrades(list,s){return list.map(t=>({t,c:calcTrade(t,s)})).filter(x=>x.c&&x.c.closed).map(x=>({...x.t,c:x.c,net:x.c.net,r:x.c.r}))}
 function inPeriod(dateStr,p){if(p==='all')return true;const from=addDays(todayStr(),-(p==='7'?7:30));return dateStr.slice(0,10)>=from}
 function ymd(x){return(x.dt||x.date||'').slice(0,10)}
@@ -423,6 +399,7 @@ const TAGS=['Sesuai rencana','Sabar','FOMO','Revenge'];
 const SESSIONS=['Asian','London','New York'];
 const $=(s,r=document)=>r.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safeUrl=u=>/^https?:\/\//i.test(u||'')?u:'#';
 const f2=(n,d=2)=>isNum(n)?n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
 const money=(n,d=2)=>!isNum(n)?'—':(n<0?'-':n>0?'+':'')+'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 const cls=n=>!isNum(n)||n===0?'':n>0?'pos':'neg';
@@ -432,7 +409,7 @@ const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMo
 const nowLocal=()=>todayStr()+'T'+new Date().toTimeString().slice(0,5);
 const uid=p=>p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 
-const VIEWS={};let cur='ringkasan';const flt={period:'all',reviewWeek:null,editMap:null,editTrade:null,btSel:null,mapFilter:'all'};
+const VIEWS={};let cur='ringkasan';const flt={period:'all',reviewWeek:null,editMap:null,editTrade:null,btSel:null,editBt:null,editPos:null,mapFilter:'all'};
 function renderTabs(){$('#tabs').innerHTML=MODULES.map(([k,l])=>`<a href="#${k}" ${k===cur?'aria-current="page"':''}>${l}</a>`).join('')}
 function renderBanner(){const b=$('#banner');
   b.innerHTML=S&&S.sample?`<div class="banner info"><span>Anda melihat <b>data contoh</b> (XAUUSD dan beberapa pair). Simpan catatan pertama Anda untuk menggantinya.</span><button id="dismissSample">Mulai dari kosong</button></div>`:''}
@@ -453,7 +430,7 @@ VIEWS.ringkasan={
     const m=metrics(cl,startBal);const maps=S.maps.filter(x=>inPeriod(x.date,flt.period));
     const judged=maps.filter(x=>x.status==='HIT'||x.status==='MISS');const acc=judged.length?judged.filter(x=>x.status==='HIT').length/judged.length*100:null;
     const ser=equitySeries(cl,startBal);
-    const sess=SESSIONS.map(n=>{const l=cl.filter(t=>sessionOf(t.dt,s.utc)===n);const mm=metrics(l,0);return{name:n,n:l.length,net:mm.net,wr:mm.winRate}});
+    const sess=[...SESSIONS,'Off-hours'].map(n=>{const l=cl.filter(t=>sessionOf(t.dt,s.utc)===n);const mm=metrics(l,0);return{name:n,n:l.length,net:mm.net,wr:mm.winRate}}).filter(x=>x.n||x.name!=='Off-hours');
     const miss=MISS_CAUSES.map(c=>({name:c,v:maps.filter(x=>x.status==='MISS'&&x.cause===c).length})).sort((a,b)=>b.v-a.v);
     const mapIdx={};S.maps.forEach(x=>{mapIdx[x.date+'|'+x.pair]=x});
     const grp={HIT:[],MISS:[],none:[]};cl.forEach(t=>{const mp=mapIdx[ymd(t)+'|'+t.pair];(mp&&mp.status==='HIT'?grp.HIT:mp&&mp.status==='MISS'?grp.MISS:grp.none).push(t)});
@@ -548,7 +525,7 @@ VIEWS.mapping={
       <td class="num">${esc(x.date)}</td><td>${esc(x.session)}</td><td class="num">${esc(x.pair)}</td><td>${esc(x.bias)}</td>
       <td><span class="pill ${x.status==='HIT'?'hit':x.status==='MISS'?'miss':'wait'}">${x.status==='HIT'?'✓ HIT':x.status==='MISS'?'✕ MISS':'… Menunggu'}</span></td>
       <td>${esc(x.cause||'')}</td><td class="wrapc">${esc(x.levels||'').replace(/\n/g,'<br>')}</td>
-      <td>${x.before?`<a href="${esc(x.before)}" target="_blank" rel="noopener">Before</a>`:''} ${x.after?`<a href="${esc(x.after)}" target="_blank" rel="noopener">After</a>`:''}</td>
+      <td>${x.before?`<a href="${esc(safeUrl(x.before))}" target="_blank" rel="noopener">Before</a>`:''} ${x.after?`<a href="${esc(safeUrl(x.after))}" target="_blank" rel="noopener">After</a>`:''}</td>
       <td>${x.sample?'<span class="note">contoh</span>':`<button class="ghost" data-e="${x.id}">Ubah</button><button class="ghost danger" data-d="${x.id}">Hapus</button>`}</td></tr>`).join('')}</tbody></table></div>`;
     el.onclick=ev=>{const b=ev.target.closest('button');if(!b)return;
       if(b.dataset.e){flt.editMap=b.dataset.e;this.mount();window.scrollTo(0,0)}
@@ -607,21 +584,24 @@ VIEWS.jurnal={
 /* Backtest Module */
 const TFS=['M5','M15','M30','H1','H4','D1'];
 VIEWS.backtest={
-  mount(){$('#app').innerHTML=`<div class="grid g2"><div class="card"><h2>Sesi backtest baru</h2>
+  mount(){const eb=S.bts.find(x=>x.id===flt.editBt)||{};$('#app').innerHTML=`<div class="grid g2"><div class="card"><h2>Sesi backtest baru</h2>
     <form id="bf" class="fg" style="grid-template-columns:1fr 1fr">
       <label class="f" style="grid-column:1/-1">Nama strategi<input name="name" placeholder="mis. OB Retest H1 Gold" required></label>
       <label class="f">Timeframe<select name="tf">${TFS.map(x=>`<option ${x==='H1'?'selected':''}>${x}</option>`).join('')}</select></label>
       <label class="f">Modal awal ($)<input type="number" name="capital" step="any" min="1" value="10000" required></label>
       <label class="f">Dari<input type="date" name="from"></label><label class="f">Sampai<input type="date" name="to"></label>
-      <label class="f" style="grid-column:1/-1">Risiko per trade (%)<input type="number" name="risk" step="0.1" min="0.1" value="1" required></label>
+      <label class="f">Risiko per trade (%)<input type="number" name="risk" step="0.1" min="0.1" value="1" required></label><label class="f">Biaya spread (pip)<input type="number" name="cost" step="any" min="0" value="0"></label>
       <div style="grid-column:1/-1"><button class="primary" type="submit">Buat sesi</button></div></form></div>
       <div class="card"><h2>Sesi tersimpan</h2><div id="bl"></div></div></div><div id="bd"></div>`;
     $('#bf').onsubmit=ev=>{ev.preventDefault();const o=Object.fromEntries(new FormData(ev.target));
-      const id=uid('b');saveDoc({id,kind:'bt',name:o.name,tf:o.tf,from:o.from,to:o.to,capital:+o.capital,risk:+o.risk,trades:[]});flt.btSel=id;toast('Sesi dibuat');this.refresh();ev.target.reset()};
+      const id=eb.id||uid('b');const old=S.bts.find(x=>x.id===id)||{};flt.editBt=null;flt.btSel=id;
+      saveDoc({id,kind:'bt',name:o.name,tf:o.tf,from:o.from,to:o.to,capital:+o.capital,risk:+o.risk,cost:+o.cost||0,trades:old.trades||[]});toast(eb.id?'Sesi diperbarui':'Sesi dibuat');this.mount()};
+    if(eb.id){const bf=$('#bf');['name','tf','capital','from','to','risk','cost'].forEach(k=>{bf.elements[k].value=eb[k]??''});bf.closest('.card').querySelector('h2').textContent='Ubah sesi backtest';bf.querySelector('button.primary').textContent='Simpan perubahan';
+      const c=document.createElement('button');c.type='button';c.textContent='Batal';c.onclick=()=>{flt.editBt=null;this.mount()};bf.querySelector('button.primary').after(c)}
     this.refresh()},
   refresh(){const l=$('#bl');if(!l)return;const s=S.settings;
-    l.innerHTML=S.bts.length?S.bts.map(b=>`<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line-2)"><button class="ghost" data-s="${b.id}" ${flt.btSel===b.id?'style="font-weight:700;color:var(--accent)"':''}>${esc(b.name)}</button><span class="note">${esc(b.tf)} · ${b.trades.length} posisi</span><span class="sp"></span><button class="ghost danger" data-d="${b.id}">Hapus</button></div>`).join(''):'<div class="empty">Belum ada sesi backtest.</div>';
-    l.onclick=ev=>{const b=ev.target.closest('button');if(!b)return;if(b.dataset.s){flt.btSel=b.dataset.s;this.refresh()}
+    l.innerHTML=S.bts.length?S.bts.map(b=>`<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line-2)"><button class="ghost" data-s="${b.id}" ${flt.btSel===b.id?'style="font-weight:700;color:var(--accent)"':''}>${esc(b.name)}</button><span class="note">${esc(b.tf)} · ${b.trades.length} posisi</span><span class="sp"></span><button class="ghost" data-u="${b.id}">Ubah</button><button class="ghost danger" data-d="${b.id}">Hapus</button></div>`).join(''):'<div class="empty">Belum ada sesi backtest.</div>';
+    l.onclick=ev=>{const b=ev.target.closest('button');if(!b)return;if(b.dataset.s){flt.btSel=b.dataset.s;this.refresh()}if(b.dataset.u){flt.editBt=b.dataset.u;flt.btSel=b.dataset.u;this.mount();window.scrollTo(0,0)}
       if(b.dataset.d){if(b.dataset.armed){removeDoc(b.dataset.d);if(flt.btSel===b.dataset.d)flt.btSel=null;toast('Sesi dihapus')}else{b.dataset.armed=1;b.textContent='Yakin?'}}};
     const bt=S.bts.find(x=>x.id===flt.btSel)||S.bts[0];const d=$('#bd');
     if(!bt){d.innerHTML='';return}flt.btSel=bt.id;
@@ -630,7 +610,7 @@ VIEWS.backtest={
     <div class="kpis"><div class="kpi hero"><div class="l">Net P&amp;L</div><div class="v ${cls(m.net)}">${rows.length?arrow(m.net)+money(m.net):'—'}</div><div class="s">ekuitas akhir $${f2(m.endEq)}</div></div>
       <div class="kpi"><div class="l">Win rate</div><div class="v">${isNum(m.winRate)?m.winRate.toFixed(1)+'%':'—'}</div><div class="s">${m.n} posisi</div></div>
       <div class="kpi"><div class="l">Profit factor</div><div class="v">${pf(m.pf)}</div></div>
-      <div class="kpi"><div class="l">Max DD</div><div class="v">${rows.length?m.maxDD.toFixed(1)+'%':'—'}</div></div></div>
+      <div class="kpi"><div class="l">Avg R</div><div class="v ${cls(m.avgR)}">${isNum(m.avgR)?f2(m.avgR)+'R':'—'}</div></div><div class="kpi"><div class="l">Max DD</div><div class="v">${rows.length?m.maxDD.toFixed(1)+'%':'—'}</div></div></div>
     <div class="card" style="margin-bottom:16px"><h3>Kurva ekuitas simulasi</h3>${equityChart('eqb',ser,bt.capital)}</div>
     <div class="card" style="margin-bottom:16px"><h2>Tambah posisi historis</h2><form id="pf"><div class="fg">
       <label class="f">Tanggal<input type="date" name="dt" required></label>
@@ -646,12 +626,17 @@ VIEWS.backtest={
     $('#pf').onsubmit=ev=>{ev.preventDefault();const f=ev.target;const g=n=>f.elements[n].value;
       const t={dt:g('dt'),pair:g('pair'),type:g('type'),entry:num(g('entry')),sl:num(g('sl')),tp:num(g('tp')),exit:num(g('exit')),setup:g('setup'),lot:0.01};
       const {errs}=validateTrade(t,s);$('#perr').innerHTML=errs.length?`<div class="errs">${errs.map(esc).join('<br>')}</div>`:'';if(errs.length)return;
-      saveDoc({...bt,trades:[...bt.trades,{id:uid('p'),dt:t.dt,pair:t.pair,type:t.type,entry:t.entry,sl:t.sl,tp:t.tp,exit:t.exit,setup:t.setup}]});toast('Posisi ditambahkan')};
+      const cb=S.bts.find(x=>x.id===bt.id)||bt;const eid=flt.editPos;const np={id:eid||uid('p'),dt:t.dt,pair:t.pair,type:t.type,entry:t.entry,sl:t.sl,tp:t.tp,exit:t.exit,setup:t.setup};flt.editPos=null;
+      saveDoc({...cb,trades:eid?cb.trades.map(x=>x.id===eid?np:x):[...cb.trades,np]});toast(eid?'Posisi diperbarui':'Posisi ditambahkan')};
+    const ep=bt.trades.find(x=>x.id===flt.editPos);if(ep){const pm=$('#pf');['dt','pair','type','entry','sl','tp','exit','setup'].forEach(k=>pm.elements[k].value=ep[k]??'');pm.closest('.card').querySelector('h2').textContent='Ubah posisi';const pb=pm.querySelector('button.primary');pb.textContent='Simpan perubahan';
+      const c=document.createElement('button');c.type='button';c.textContent='Batal';c.onclick=()=>{flt.editPos=null;this.refresh()};pb.after(c)}
     $('#pl').innerHTML=rows.length?`<div class="tbl-wrap"><table><thead><tr><th>Tanggal</th><th>Pair</th><th>Tipe</th><th class="r">Entry</th><th class="r">SL</th><th class="r">TP</th><th class="r">Exit</th><th class="r">Lot</th><th class="r">Net</th><th class="r">Ekuitas</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr>
       <td class="num">${esc(r.dt)}</td><td class="num">${esc(r.pair)}</td><td><span class="pill ${r.type==='Buy'?'buy':'sell'}">${r.type}</span></td><td class="r num">${r.entry}</td><td class="r num">${r.sl}</td><td class="r num">${r.tp??'—'}</td><td class="r num">${r.exit}</td><td class="r num">${r.lot}</td>
       <td class="r num ${cls(r.net)}">${arrow(r.net)}${money(r.net)}</td><td class="r num">$${f2(r.eq,0)}</td>
-      <td><button class="ghost danger" data-p="${r.id}">Hapus</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="card empty">Belum ada posisi pada sesi ini.</div>';
-    $('#pl').onclick=ev=>{const b=ev.target.closest('button');if(!b||!b.dataset.p)return;saveDoc({...bt,trades:bt.trades.filter(x=>x.id!==b.dataset.p)})}}
+      <td><button class="ghost" data-pe="${r.id}">Ubah</button><button class="ghost danger" data-p="${r.id}">Hapus</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="card empty">Belum ada posisi pada sesi ini.</div>';
+    $('#pl').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;
+    if(b.dataset.pe){flt.editPos=b.dataset.pe;this.refresh();window.scrollTo(0,0);return}
+    if(b.dataset.p){if(!confirm('Hapus posisi ini?'))return;const cb=S.bts.find(x=>x.id===bt.id)||bt;saveDoc({...cb,trades:cb.trades.filter(x=>x.id!==b.dataset.p)})}}}
 };
 
 /* Calculator Module */
@@ -697,28 +682,39 @@ VIEWS.pengaturan={
       <label class="f">Zona waktu (UTC+)<input type="number" name="utc" step="1" min="-12" max="14" value="${s.utc}"></label>
       <div style="grid-column:1/-1"><button class="primary" type="submit">Simpan pengaturan</button></div></form></div>
     <div class="card"><h2>Status Penyimpanan</h2>
-      <p>Status: <b style="color:var(--accent)">${mode==='db'?'Firebase Cloud Firestore Connected':'Penyimpanan Lokal Browser'}</b></p>
-      <p class="note">Aplikasi ini berjalan secara PWA dan terhubung ke cloud database secara otomatis.</p></div></div>`;
+      <p>Status: <b style="color:var(--accent)" id="dbStatusText">${mode==='db'?'Firebase Cloud Firestore Connected':'Penyimpanan Lokal Browser'}</b></p>
+      <p class="note">Aplikasi ini berjalan secara PWA dan terhubung ke cloud database secara otomatis jika online.</p><div class="row"><button id="bk">Export cadangan (JSON)</button><button id="rs">Import cadangan</button><input type="file" id="rsf" accept=".json" hidden></div></div></div>`;
     $('#sf').onsubmit=ev=>{ev.preventDefault();const o=Object.fromEntries(new FormData(ev.target));
       saveDoc({id:'settings',kind:'settings',balance:+o.balance||s.balance,riskPct:+o.riskPct||s.riskPct,maxDailyLossPct:+o.maxDailyLossPct||s.maxDailyLossPct,utc:Math.round(+o.utc),fx});toast('Pengaturan tersimpan')};
+    $('#bk').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify([...docs.values()],null,1)],{type:'application/json'}));a.download='meja-trader-'+todayStr()+'.json';a.click()};
+    $('#rs').onclick=()=>$('#rsf').click();
+    $('#rsf').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const a=JSON.parse(await f.text());if(!Array.isArray(a))throw 0;const ok=a.filter(d=>d&&d.id&&d.kind);if(!confirm('Impor '+ok.length+' data? ID yang sama akan ditimpa.'))return;for(const d of ok)await saveDoc(d);toast('Impor selesai')}catch(x){toast('File tidak valid')}};
   },
   refresh(){}
 };
 
-/* SYSTEM BOOT & LISTENERS */
-window.addEventListener('firebase-ready', () => {
-  if(window.fbDb && window.fbCol) {
-    window.fbOnSnapshot(window.fbCol, (snapshot) => {
+/* INITIALIZATION & REAL-TIME LISTENER */
+let migrated=false;
+function initCloud() {
+  if (journalsCol) {
+    journalsCol.onSnapshot((snapshot) => {
       mode = 'db';
+      const cloud = new Map();
+      snapshot.forEach((s) => cloud.set(s.id, s.data()));
+      if (!migrated && !snapshot.metadata.fromCache) {
+        migrated = true;
+        const miss = localBoot.filter(d => !cloud.has(d.id));
+        miss.forEach(d => { cloud.set(d.id, d); journalsCol.doc(d.id).set(d).catch(e => console.warn(e)); });
+        if (miss.length) toast(miss.length + ' data lokal diunggah ke Cloud');
+      }
       docs.clear();
-      snapshot.forEach((docSnap) => {
-        docs.set(docSnap.id, docSnap.data());
-      });
+      cloud.forEach((v, k) => docs.set(k, v));
+      if (migrated) persistLocal();
       build();
       updateChip();
       (VIEWS[cur]||{}).refresh?.();
-    }, (error) => {
-      console.warn("Firestore access error/permission denied, fallback to local storage:", error);
+    }, (err) => {
+      console.warn("Firestore snapshot listener permission error/fallback to local:", err);
       mode = 'local';
       loadLocal();
       build();
@@ -731,26 +727,21 @@ window.addEventListener('firebase-ready', () => {
     build();
     updateChip();
   }
-});
-
-window.addEventListener('firebase-error', () => {
-  mode = 'local';
-  loadLocal();
-  build();
-  updateChip();
-});
+}
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('PWA Service Worker registered:', reg.scope))
-      .catch(err => console.warn('PWA Service Worker failed:', err));
+      .then(reg => console.log('PWA Service Worker registered'))
+      .catch(err => console.warn('PWA SW failed:', err));
   });
 }
 
 loadLocal();
+const localBoot=[...docs.values()];
 build();
 route();
+initCloud();
 </script>
 
 </body>
